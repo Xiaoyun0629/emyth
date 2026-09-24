@@ -15,7 +15,6 @@
  */
 package dynamiccolor
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue
 import contrast.Contrast
 import dynamiccolor.ColorSpec.SpecVersion
 import hct.Hct
@@ -231,45 +230,45 @@ class DynamicColor(
     private var toneDeltaPair: ((DynamicScheme) -> ToneDeltaPair?)? = null
     private var opacity: ((DynamicScheme) -> Double?)? = null
 
-    @CanIgnoreReturnValue fun setName(name: String) = apply { this.name = name }
+     fun setName(name: String) = apply { this.name = name }
 
-    @CanIgnoreReturnValue
+    
     fun setPalette(palette: (DynamicScheme) -> TonalPalette) = apply { this.palette = palette }
 
-    @CanIgnoreReturnValue fun setTone(tone: (DynamicScheme) -> Double) = apply { this.tone = tone }
+     fun setTone(tone: (DynamicScheme) -> Double) = apply { this.tone = tone }
 
-    @CanIgnoreReturnValue
+    
     fun setIsBackground(isBackground: Boolean) = apply { this.isBackground = isBackground }
 
-    @CanIgnoreReturnValue
+    
     fun setChromaMultiplier(chromaMultiplier: ((DynamicScheme) -> Double)?) = apply {
       this.chromaMultiplier = chromaMultiplier
     }
 
-    @CanIgnoreReturnValue
+    
     fun setBackground(background: ((DynamicScheme) -> DynamicColor?)?) = apply {
       this.background = background
     }
 
-    @CanIgnoreReturnValue
+    
     fun setSecondBackground(secondBackground: ((DynamicScheme) -> DynamicColor?)?) = apply {
       this.secondBackground = secondBackground
     }
 
-    @CanIgnoreReturnValue
+    
     fun setContrastCurve(contrastCurve: ((DynamicScheme) -> ContrastCurve?)?) = apply {
       this.contrastCurve = contrastCurve
     }
 
-    @CanIgnoreReturnValue
+    
     fun setToneDeltaPair(toneDeltaPair: ((DynamicScheme) -> ToneDeltaPair?)?) = apply {
       this.toneDeltaPair = toneDeltaPair
     }
 
-    @CanIgnoreReturnValue
+    
     fun setOpacity(opacity: ((DynamicScheme) -> Double?)?) = apply { this.opacity = opacity }
 
-    @CanIgnoreReturnValue
+    
     fun extendSpecVersion(specVersion: SpecVersion, extendedColor: DynamicColor): Builder {
       validateExtendedColor(specVersion, extendedColor)
       return Builder()
