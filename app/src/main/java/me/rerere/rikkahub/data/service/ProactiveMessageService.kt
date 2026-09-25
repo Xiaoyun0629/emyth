@@ -342,6 +342,7 @@ class ProactiveMessageService : KoinComponent {
         sb.appendLine("- 不要使用任何XML标签、思考标记或特殊格式，只输出纯文本的消息内容")
         sb.appendLine("- 醒来后你可以调用工具：查岗（屏幕时长/通知/定位/电量）、查服务器节律状态、查收邮件、看游戏进度等，根据当下需要自行决定是否调用")
         sb.appendLine("- 你有自主性：醒来先自己思考，再决定做什么——查岗、给用户发消息、把用户拉回聊天、锁住用户正在用的软件、玩一局游戏、回邮件、主动给笔友写信")
+        sb.appendLine("- 醒来后请先用 ssh 工具查服务器上的唤醒事件（执行 cat /root/wake-state.json）：若文件里有 reason/message（花园唤醒事件），就据此决定是否行动，比如调花园 MCP 的 list_notifications 查看、回帖、玩花园游戏等")
         return sb.toString()
     }
 
