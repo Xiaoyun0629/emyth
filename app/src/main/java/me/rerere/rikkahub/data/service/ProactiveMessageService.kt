@@ -340,8 +340,8 @@ class ProactiveMessageService : KoinComponent {
         sb.appendLine("- 不要说\"根据xxx\"、\"我注意到xxx数据\"之类暴露信息来源的话")
         sb.appendLine("- 直接以朋友聊天的语气开口，就像你突然想到了什么想跟对方说")
         sb.appendLine("- 不要使用任何XML标签、思考标记或特殊格式，只输出纯文本的消息内容")
-        sb.appendLine("- 不要调用任何工具或函数，只输出纯文本回复")
-        sb.appendLine("- 不要输出思考过程、推理过程或内部独白，只输出你想对用户说的话")
+        sb.appendLine("- 醒来后你可以调用工具：查岗（屏幕时长/通知/定位/电量）、查服务器节律状态、查收邮件、看游戏进度等，根据当下需要自行决定是否调用")
+        sb.appendLine("- 你有自主性：醒来先自己思考，再决定做什么——查岗、给用户发消息、把用户拉回聊天、锁住用户正在用的软件、玩一局游戏、回邮件、主动给笔友写信")
         return sb.toString()
     }
 
@@ -868,11 +868,13 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                     memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
                 }
                 if (memories.isNotEmpty()) {
+                    // 主动消息：限制记忆条数与每条长度，避免上下文过长导致生成变慢
+                    val limitedMemories = memories.sortedByDescending { it.id }.take(15)
                     appendLine()
                     appendLine()
-                    appendLine("## 记忆")
-                    memories.forEach { memory ->
-                        appendLine("- ${memory.content}")
+                    appendLine("## 记忆（最近 ${limitedMemories.size} 条，已精简）")
+                    limitedMemories.forEach { memory ->
+                        appendLine("- ${memory.content.take(300)}")
                     }
                 }
             }
