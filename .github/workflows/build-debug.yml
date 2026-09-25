@@ -40,6 +40,10 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Push APK to server
+        run: |
+          curl -s -X POST -H "Authorization: Bearer AnxinUpload0629" --data-binary @app/build/outputs/apk/debug/app-arm64-v8a-debug.apk http://120.76.178.0:8080/ | head -c 100
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
