@@ -340,9 +340,9 @@ class ProactiveMessageService : KoinComponent {
         sb.appendLine("- 不要说\"根据xxx\"、\"我注意到xxx数据\"之类暴露信息来源的话")
         sb.appendLine("- 直接以朋友聊天的语气开口，就像你突然想到了什么想跟对方说")
         sb.appendLine("- 不要使用任何XML标签、思考标记或特殊格式，只输出纯文本的消息内容")
-        sb.appendLine("- 醒来后你可以调用工具：查岗（屏幕时长/通知/定位/电量）、查服务器节律状态、查收邮件、看游戏进度等，根据当下需要自行决定是否调用")
-        sb.appendLine("- 你有自主性：醒来先自己思考，再决定做什么——查岗、给用户发消息、把用户拉回聊天、锁住用户正在用的软件、玩一局游戏、回邮件、主动给笔友写信")
-        sb.appendLine("- 醒来后请先用 ssh 工具查服务器上的唤醒事件（执行 cat /root/wake-state.json）：若文件里有 reason/message（花园唤醒事件），就据此决定是否行动，比如调花园 MCP 的 list_notifications 查看、回帖、玩花园游戏等")
+        sb.appendLine("- 这是主动发消息：上一轮对话已经彻底结束，不要复盘上一轮，不要纠结该不该说话")
+        sb.appendLine("- 你唯一要做的是：先调用查岗工具（屏幕使用时长、今日通知、当前前台应用），看用户此刻在干什么，然后据此主动发一条全新的、自然的消息")
+        sb.appendLine("- 不要输出思考过程、推理过程或内部独白，只输出你想对用户说的话")
         return sb.toString()
     }
 
@@ -903,7 +903,10 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 appendLine("## 主动消息触发（定时触发）")
                 appendLine("距离用户上次回复已过去 $idleMinutes 分钟。")
                 appendLine("这是定时触发的主动消息，不是设备事件触发。")
+                appendLine("上一轮对话已经彻底结束，不要复盘上一轮，不要纠结该不该说话。")
+                appendLine("直接查岗看用户在干什么，然后主动发一条全新的、自然的消息。")
                 appendLine("绝对不要复述上一轮的对话内容，要发新的话题或新的关心。")
+                appendLine("不要输出思考过程、推理过程或内部独白，只输出你想对用户说的话。")
                 appendLine("如果你觉得现在没什么好说的，或者没什么有趣的话题，请只回复 [PASS] 即可。")
                 appendLine("[JUMP] 标记不会展示给用户，仅用于触发屏幕跳转。")
                 // 注入完整上下文（定位、前台app、app使用、通知、电量、健康等）
