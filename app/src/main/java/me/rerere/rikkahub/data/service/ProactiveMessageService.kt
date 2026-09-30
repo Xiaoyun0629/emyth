@@ -631,7 +631,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                     topP = assistant.topP,
                     maxTokens = assistant.maxTokens,
                     tools = tools,
-                    reasoningLevel = assistant.reasoningLevel,
+                    reasoningLevel = ReasoningLevel.OFF,  // 主动消息强制不走思考，避免思考链空转/重复上下文
                     customHeaders = buildList {
                         addAll(assistant.customHeaders)
                         addAll(model.customHeaders)
