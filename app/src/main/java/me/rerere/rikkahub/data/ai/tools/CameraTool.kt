@@ -111,7 +111,7 @@ fun createCameraTool(context: Context): Tool {
                 listOf(UIMessagePart.Text(
                     buildJsonObject {
                         put("success", false)
-                        put("error", "Camera capture failed: ${e.message}")
+                        put("error", "Camera capture failed: ${e.stackTraceToString().take(800)}")
                     }.toString()
                 ))
             }
