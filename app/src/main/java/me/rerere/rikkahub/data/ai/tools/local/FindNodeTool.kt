@@ -23,7 +23,7 @@ import me.rerere.rikkahub.data.ai.AgentTurnTracker
 import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
 import me.rerere.rikkahub.service.ActionLogEntry
 
-private val ALLOWED_BY = setOf("text", "content_description", "view_id_resource_name")
+private val ALLOWED_BY = setOf("text", "content_description", "view_id_resource_name", "editable")
 
 private fun findMatches(
     root: AccessibilityNodeInfo,
@@ -44,6 +44,17 @@ private fun findMatches(
                 }
             }
             walk(root)
+            out
+        }
+        "editable" -> {
+            val out = mutableListOf<AccessibilityNodeInfo>()
+            fun walkEditable(n: AccessibilityNodeInfo) {
+                if (n.isEditable) out.add(n)
+                for (i in 0 until n.childCount) {
+                    n.getChild(i)?.let { walkEditable(it) }
+                }
+            }
+            walkEditable(root)
             out
         }
         else -> emptyList()
@@ -73,7 +84,7 @@ fun findNodeTool(
             properties = buildJsonObject {
                 put("by", buildJsonObject {
                     put("type", "string")
-                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name") })
+                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name"); add("editable") })
                     put("description", "Selector axis")
                 })
                 put("value", buildJsonObject {
@@ -152,7 +163,7 @@ fun clickNodeTool(
             properties = buildJsonObject {
                 put("by", buildJsonObject {
                     put("type", "string")
-                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name") })
+                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name"); add("editable") })
                 })
                 put("value", buildJsonObject { put("type", "string") })
                 put("package_name", buildJsonObject { put("type", "string") })
@@ -262,7 +273,7 @@ fun setTextTool(
             properties = buildJsonObject {
                 put("by", buildJsonObject {
                     put("type", "string")
-                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name") })
+                    put("enum", buildJsonArray { add("text"); add("content_description"); add("view_id_resource_name"); add("editable") })
                     put("description", "Selector axis to find the editable node")
                 })
                 put("value", buildJsonObject {
