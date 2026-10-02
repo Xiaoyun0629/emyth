@@ -161,6 +161,7 @@ class CameraService(private val context: Context) {
         var cameraDevice: CameraDevice? = null
         var captureSession: CameraCaptureSession? = null
         var imageReader: ImageReader? = null
+        var previewReader: ImageReader? = null
         var backgroundThread: HandlerThread? = null
         var backgroundHandler: Handler? = null
         
@@ -203,6 +204,20 @@ class CameraService(private val context: Context) {
             backgroundThread = HandlerThread("CameraBackground").apply { start() }
             backgroundHandler = Handler(backgroundThread.looper)
             
+            // 创建预览用 ImageReader（YUV，低分辨率），让 AF/AE/AWB 有画面可收敛
+            val previewSize = Size(640, 480)
+            previewReader = ImageReader.newInstance(
+                previewSize.width,
+                previewSize.height,
+                ImageFormat.YUV_420_888,
+                2
+            ).apply {
+                setOnImageAvailableListener({ reader ->
+                    val img = reader.acquireLatestImage()
+                    img?.close()
+                }, backgroundHandler)
+            }
+
             // 创建ImageReader
             imageReader = ImageReader.newInstance(
                 maxSize.width,
@@ -224,6 +239,8 @@ class CameraService(private val context: Context) {
                             // 清理资源
                             captureSession?.close()
                             cameraDevice?.close()
+                            previewReader?.close()
+                            imageReader?.close()
                             backgroundThread?.quitSafely()
                             
                             continuation.resume(CaptureResult(
@@ -248,7 +265,7 @@ class CameraService(private val context: Context) {
                     
                     try {
                         // 创建捕获会话
-                        val surfaces = listOf(imageReader!!.surface)
+                        val surfaces = listOf(previewReader!!.surface, imageReader!!.surface)
                         
                         camera.createCaptureSession(
                             surfaces,
@@ -280,7 +297,13 @@ class CameraService(private val context: Context) {
                                             // 设置自动曝光
                                             set(
                                                 CaptureRequest.CONTROL_AE_MODE,
-                                                CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
+                                                CaptureRequest.CONTROL_AE_MODE_ON
+                                            )
+                                            
+                                            // 设置自动白平衡（修粉色偏色）
+                                            set(
+                                                CaptureRequest.CONTROL_AWB_MODE,
+                                                CaptureRequest.CONTROL_AWB_MODE_AUTO
                                             )
                                             
                                             // 设置方向 - 使用Display.rotation计算正确的JPEG方向
@@ -290,12 +313,33 @@ class CameraService(private val context: Context) {
                                             )
                                         }
                                         
-                                        // 拍照
-                                        session.capture(
-                                            captureRequestBuilder.build(),
-                                            null,
-                                            backgroundHandler
-                                        )
+                                        // 先跑预览让 AF/AE/AWB 收敛（修糊和过曝）
+                                        val previewRequest = camera.createCaptureRequest(
+                                            CameraDevice.TEMPLATE_PREVIEW
+                                        ).apply {
+                                            addTarget(previewReader!!.surface)
+                                            set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                                            set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                                            set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
+                                        }
+                                        session.setRepeatingRequest(previewRequest.build(), null, backgroundHandler)
+                                        
+                                        // 延迟约 800ms，等对焦/曝光/白平衡稳定后再拍正式照片
+                                        backgroundHandler.postDelayed({
+                                            try {
+                                                session.stopRepeating()
+                                                session.capture(
+                                                    captureRequestBuilder.build(),
+                                                    null,
+                                                    backgroundHandler
+                                                )
+                                            } catch (e: CameraAccessException) {
+                                                continuation.resume(CaptureResult(
+                                                    success = false,
+                                                    error = "Failed to capture: ${e.message}"
+                                                ))
+                                            }
+                                        }, 800)
                                     } catch (e: CameraAccessException) {
                                         continuation.resume(CaptureResult(
                                             success = false,
@@ -352,6 +396,8 @@ class CameraService(private val context: Context) {
         continuation.invokeOnCancellation {
             captureSession?.close()
             cameraDevice?.close()
+            previewReader?.close()
+            imageReader?.close()
             backgroundThread?.quitSafely()
         }
     }
