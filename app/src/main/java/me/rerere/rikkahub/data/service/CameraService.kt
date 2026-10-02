@@ -108,7 +108,7 @@ class CameraService(private val context: Context) {
                 
                 if (streamConfigMap != null) {
                     val sizes = streamConfigMap.getOutputSizes(ImageFormat.JPEG)
-                    val maxSize = sizes.maxByOrNull { it.width * it.height } ?: Size(1920, 1080)
+                    val maxSize = sizes?.maxByOrNull { it.width * it.height } ?: Size(1920, 1080)
                     
                     val flashAvailable = characteristics.get(
                         CameraCharacteristics.FLASH_INFO_AVAILABLE
