@@ -45,6 +45,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.rememberHazeState
@@ -304,7 +307,11 @@ private fun ChatPageContent(
                 )
             },
             bottomBar = {
-                ChatInput(
+                val lockChat = setting.lockChatSetting
+                if (lockChat.lockedUntilMillis > System.currentTimeMillis()) {
+                    LockChatBar(lockUntilMillis = lockChat.lockedUntilMillis, message = lockChat.lockMessage)
+                } else {
+                    ChatInput(
                     state = inputState,
                     loading = loadingJob != null,
                     settings = setting,
@@ -395,7 +402,8 @@ private fun ChatPageContent(
                     onCompressContext = { additionalPrompt, targetTokens, keepRecentMessages ->
                         vm.handleCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
                     },
-                )
+                    )
+                }
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
@@ -606,5 +614,44 @@ private fun TopBar(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun LockChatBar(lockUntilMillis: Long, message: String) {
+    var remaining by remember { mutableStateOf(lockUntilMillis - System.currentTimeMillis()) }
+    LaunchedEffect(lockUntilMillis) {
+        while (true) {
+            remaining = lockUntilMillis - System.currentTimeMillis()
+            if (remaining <= 0) break
+            delay(1000)
+        }
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = message.ifBlank { "该睡觉啦，明天再来找我" },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = "距离解锁还有 ${formatLockRemaining(remaining)}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun formatLockRemaining(ms: Long): String {
+    if (ms <= 0) return "0 秒"
+    val totalSec = ms / 1000
+    val h = totalSec / 3600
+    val m = (totalSec % 3600) / 60
+    val s = totalSec % 60
+    return when {
+        h > 0 -> "${h} 小时 ${m} 分"
+        m > 0 -> "${m} 分 ${s} 秒"
+        else -> "${s} 秒"
     }
 }

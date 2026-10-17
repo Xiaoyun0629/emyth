@@ -165,6 +165,7 @@ class SettingsStore(
 
         // 主动消息设置
         val PROACTIVE_MESSAGE_SETTING = stringPreferencesKey("proactive_message_setting")
+        val LOCK_CHAT_SETTING = stringPreferencesKey("lock_chat_setting")
 
         // 保活服务设置
         val KEEP_ALIVE_ENABLED = booleanPreferencesKey("keep_alive_enabled")
@@ -293,6 +294,9 @@ class SettingsStore(
                 proactiveMessageSetting = preferences[PROACTIVE_MESSAGE_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: ProactiveMessageSetting(),
+                lockChatSetting = preferences[LOCK_CHAT_SETTING]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: LockChatSetting(),
                 wechatBotSetting = preferences[WECHAT_BOT_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: WechatBotSetting(),
@@ -482,6 +486,7 @@ class SettingsStore(
             preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
             preferences[SYSTEM_TOOLS_SETTING] = JsonInstant.encodeToString(settings.systemToolsSetting)
             preferences[PROACTIVE_MESSAGE_SETTING] = JsonInstant.encodeToString(settings.proactiveMessageSetting)
+            preferences[LOCK_CHAT_SETTING] = JsonInstant.encodeToString(settings.lockChatSetting)
             preferences[WECHAT_BOT_SETTING] = JsonInstant.encodeToString(settings.wechatBotSetting)
             preferences[QQ_BOT_SETTING] = JsonInstant.encodeToString(settings.qqBotSetting)
             preferences[KEEP_ALIVE_ENABLED] = settings.keepAliveEnabled
@@ -622,6 +627,7 @@ data class Settings(
     val sponsorAlertDismissedAt: Int = 0,
     val systemToolsSetting: SystemToolsSetting = SystemToolsSetting(),
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(),
+    val lockChatSetting: LockChatSetting = LockChatSetting(),
     val wechatBotSetting: WechatBotSetting = WechatBotSetting(),
     val qqBotSetting: QqBotSetting = QqBotSetting(),
     val keepAliveEnabled: Boolean = false,

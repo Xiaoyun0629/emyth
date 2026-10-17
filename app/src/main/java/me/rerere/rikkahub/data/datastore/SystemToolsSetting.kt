@@ -87,6 +87,9 @@ data class SystemToolsSetting(
     // App Lock: 锁定指定 App, 检测到其被打开时拦截并要求密码解锁
     val appLockEnabled: Boolean = false,
 
+    // Lock Chat: 锁定对话, 到点自动解锁
+    val lockChatEnabled: Boolean = false,
+
     // Fingerprint: verify_fingerprint 工具, 弹出系统指纹/人脸验证框验证用户身份
     val fingerprintEnabled: Boolean = false,
 ) {
@@ -120,6 +123,7 @@ data class SystemToolsSetting(
         if (appSwitchEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.AppSwitch)
         if (appLockEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.AppLock)
         if (fingerprintEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.Fingerprint)
+        if (lockChatEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.LockChat)
         return options
     }
 }

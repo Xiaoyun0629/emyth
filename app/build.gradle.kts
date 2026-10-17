@@ -122,6 +122,17 @@ android {
             buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
             buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
         }
+        create("lock") {
+            initWith(getByName("release"))
+            matchingFallbacks.add("release")
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".lock"
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+            buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

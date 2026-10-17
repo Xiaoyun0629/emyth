@@ -1212,6 +1212,23 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             }
 
 
+            // 锁对话
+            item {
+            CardGroup(title = { Text("锁对话") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                item(
+                    headlineContent = { Text("启用锁对话工具") },
+                    supportingContent = { Text("允许 AI 调用 lock_chat 工具锁定对话，锁定期内你无法发送消息（仍可查看聊天记录），到点自动解锁，用于强制休息或睡觉") },
+                    trailingContent = {
+                        Switch(
+                            checked = systemToolsSetting.lockChatEnabled,
+                            onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(lockChatEnabled = enabled)) }
+                        )
+                    }
+                )
+            }
+            }
+
+
         }
 
         PermissionManager(permissionState = locationPermissionState)
