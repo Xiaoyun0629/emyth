@@ -13,7 +13,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -22,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -33,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +78,8 @@ import me.rerere.rikkahub.data.datastore.SystemToolsSetting
 import me.rerere.rikkahub.data.gadgetbridge.GadgetbridgeReader
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.components.ui.RiskConfirmDialog
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionAccessBackgroundLocation
@@ -103,6 +112,19 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
     fun updateSystemToolsSetting(setting: SystemToolsSetting) {
         systemToolsSetting = setting
         vm.updateSettings(settings.copy(systemToolsSetting = setting))
+    }
+
+    var showLockColorPicker by remember { mutableStateOf(false) }
+    if (showLockColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.lockChatSetting.lockBackgroundColor,
+            defaultColor = MaterialTheme.colorScheme.surfaceVariant,
+            onConfirm = {
+                vm.updateSettings(settings.copy(lockChatSetting = settings.lockChatSetting.copy(lockBackgroundColor = it)))
+                showLockColorPicker = false
+            },
+            onDismiss = { showLockColorPicker = false }
+        )
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -1224,6 +1246,26 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                             onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(lockChatEnabled = enabled)) }
                         )
                     }
+                )
+                item(
+                    headlineContent = { Text("锁定条颜色") },
+                    supportingContent = { Text("锁定提示条的背景色，默认不透明底") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.lockChatSetting.lockBackgroundColor?.toComposeColor() ?: Color.Gray,
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showLockColorPicker = true }) { Text("自定义") }
+                            if (settings.lockChatSetting.lockBackgroundColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(lockChatSetting = settings.lockChatSetting.copy(lockBackgroundColor = null)))
+                                }) { Text("重置") }
+                            }
+                        }
+                    },
                 )
             }
             }

@@ -14,4 +14,5 @@ data class LockChatSetting(
     val lockedUntilMillis: Long = 0,
     // 锁定提示语（输入框上方显示的话）
     val lockMessage: String = "",
+    val lockBackgroundColor: Long? = null,
 )

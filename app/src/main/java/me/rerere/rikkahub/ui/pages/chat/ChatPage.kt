@@ -47,7 +47,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
@@ -319,7 +321,7 @@ private fun ChatPageContent(
                             lockRemaining = lockChat.lockedUntilMillis - System.currentTimeMillis()
                         }
                     }
-                    LockChatBar(remaining = lockRemaining, message = lockChat.lockMessage)
+                    LockChatBar(remaining = lockRemaining, message = lockChat.lockMessage, backgroundColor = lockChat.lockBackgroundColor)
                 } else {
                     ChatInput(
                     state = inputState,
@@ -628,9 +630,9 @@ private fun TopBar(
 }
 
 @Composable
-private fun LockChatBar(remaining: Long, message: String) {
+private fun LockChatBar(remaining: Long, message: String, backgroundColor: Long? = null) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth().background(backgroundColor?.toComposeColor() ?: MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
