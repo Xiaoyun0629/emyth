@@ -309,8 +309,17 @@ private fun ChatPageContent(
             },
             bottomBar = {
                 val lockChat = setting.lockChatSetting
-                if (lockChat.lockedUntilMillis > System.currentTimeMillis()) {
-                    LockChatBar(lockUntilMillis = lockChat.lockedUntilMillis, message = lockChat.lockMessage)
+                var lockRemaining by remember(lockChat.lockedUntilMillis) {
+                    mutableStateOf(lockChat.lockedUntilMillis - System.currentTimeMillis())
+                }
+                if (lockRemaining > 0) {
+                    LaunchedEffect(lockChat.lockedUntilMillis) {
+                        while (lockRemaining > 0) {
+                            delay(1000)
+                            lockRemaining = lockChat.lockedUntilMillis - System.currentTimeMillis()
+                        }
+                    }
+                    LockChatBar(remaining = lockRemaining, message = lockChat.lockMessage)
                 } else {
                     ChatInput(
                     state = inputState,
@@ -619,15 +628,7 @@ private fun TopBar(
 }
 
 @Composable
-private fun LockChatBar(lockUntilMillis: Long, message: String) {
-    var remaining by remember { mutableStateOf(lockUntilMillis - System.currentTimeMillis()) }
-    LaunchedEffect(lockUntilMillis) {
-        while (true) {
-            remaining = lockUntilMillis - System.currentTimeMillis()
-            if (remaining <= 0) break
-            delay(1000)
-        }
-    }
+private fun LockChatBar(remaining: Long, message: String) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
