@@ -42,8 +42,8 @@ jobs:
 
       - name: Push APK to server
         run: |
-          curl -s -X POST -H "Authorization: Bearer AnxinUpload0629" --data-binary @app/build/outputs/apk/debug/app-arm64-v8a-debug.apk http://120.76.178.0:8080/debug.apk | head -c 100
-          curl -s -X POST -H "Authorization: Bearer AnxinUpload0629" --data-binary @app/build/outputs/apk/lock/app-arm64-v8a-lock.apk http://120.76.178.0:8080/lock.apk | head -c 100
+          curl -s --connect-timeout 30 --max-time 180 --retry 3 --retry-delay 10 -X POST -H "Authorization: Bearer AnxinUpload0629" --data-binary @app/build/outputs/apk/debug/app-arm64-v8a-debug.apk http://120.76.178.0:8080/debug.apk | head -c 100 || true
+          curl -s --connect-timeout 30 --max-time 180 --retry 3 --retry-delay 10 -X POST -H "Authorization: Bearer AnxinUpload0629" --data-binary @app/build/outputs/apk/lock/app-arm64-v8a-lock.apk http://120.76.178.0:8080/lock.apk | head -c 100 || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
