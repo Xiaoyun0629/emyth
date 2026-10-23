@@ -375,6 +375,10 @@ class ProactiveMessageReceiver : BroadcastReceiver() {
             ProactiveMessageService.ACTION_PROACTIVE_MESSAGE -> {
                 Log.d(ProactiveMessageService.TAG, "Starting ProactiveMessageTriggerService...")
                 val serviceIntent = Intent(context, ProactiveMessageTriggerService::class.java)
+                val note = intent.getStringExtra("scheduled_wake_note")
+                if (note != null) {
+                    serviceIntent.putExtra("scheduled_wake_note", note)
+                }
                 context.startForegroundService(serviceIntent)
             }
             Intent.ACTION_BOOT_COMPLETED -> {
@@ -417,6 +421,8 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
         const val EXTRA_FORCE_TRIGGER = "force_trigger"
         // 激进模式设备事件上下文（由 DeviceEventAiTriggerService 传入）
         const val EXTRA_DEVICE_EVENT_CONTEXT = "device_event_context"
+        // 计划唤醒（schedule_wake 工具设置的定点唤醒）触发时携带的备注
+        const val EXTRA_SCHEDULED_WAKE_NOTE = "scheduled_wake_note"
 
         // 保护 last_triggered_time 的 check-then-act 竞态（防止 AlarmManager 与 WorkManager
         // 前后脚触发导致"最小间隔"被砍半）。纯同步 SharedPreferences 读写，无挂起点，用对象锁即可。
@@ -450,6 +456,8 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
         // 激进模式设备事件上下文（由 DeviceEventAiTriggerService 传入）
         val deviceEventContext = intent?.getStringExtra(EXTRA_DEVICE_EVENT_CONTEXT)
         val isFromDeviceEvent = deviceEventContext != null
+        val wakeNote = intent?.getStringExtra(EXTRA_SCHEDULED_WAKE_NOTE)
+        val isScheduledWake = wakeNote != null
         if (isForceTrigger) {
             Log.d(TAG, "Force trigger${if (isFromDeviceEvent) " from device event" else " from gateway poll"}, will skip min interval check")
         }
@@ -467,7 +475,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 val proactiveSetting = settings.proactiveMessageSetting
 
                 // 激进模式设备事件触发时，不检查主动消息开关（可独立工作）
-                if (!proactiveSetting.enabled && !isFromDeviceEvent) {
+                if (!proactiveSetting.enabled && !isFromDeviceEvent && !isScheduledWake) {
                     stopSelf()
                     return@launch
                 }
@@ -478,7 +486,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 // 外部触发（网关轮询/激进模式设备事件）跳过此检查，因为这是独立信号源，不受内部闹钟链约束。
                 // 注意：isForceTrigger 跳过的是"时间间隔节流"（两回事），不跳过后面 tryClaimGeneration 的并发安全检查。
                 // 把"读取 last_triggered_time -> 判断 -> 写入"整段放在同步块里，修复 check-then-act 竞态。
-                if (!isForceTrigger) {
+                if (!isForceTrigger && !isScheduledWake) {
                     val skipDueToInterval = synchronized(prefsLock) {
                         val lastTriggeredTime = prefs.getLong("last_triggered_time", 0L)
                         val minIntervalMs = proactiveSetting.minIntervalMinutes.coerceAtLeast(1) * 60 * 1000L
@@ -557,9 +565,14 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 val contextStr = if (isFromDeviceEvent && deviceEventContext != null) {
                     deviceEventContext
                 } else {
-                    proactiveMessageService.buildProactiveContext(
+                    val base = proactiveMessageService.buildProactiveContext(
                         this@ProactiveMessageTriggerService, settings
                     )
+                    if (isScheduledWake && !wakeNote.isNullOrBlank()) {
+                        base + "\n[计划唤醒] 这是你之前设置的定时唤醒，唤醒备注：$wakeNote。请据此决定是否主动给用户发消息，或调用工具。"
+                    } else {
+                        base
+                    }
                 }
 
                 // 获取历史消息（先过滤掉悬空的工具调用消息，避免 tool_use 结构不完整触发 400）

@@ -72,6 +72,7 @@ import me.rerere.hugeicons.stroke.SlidersHorizontal
 import me.rerere.hugeicons.stroke.FingerPrint
 import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.CheckList
+import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.rikkahub.data.ai.tools.SystemTools
 import me.rerere.rikkahub.service.KeepAliveService
@@ -1383,6 +1384,23 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                             }
                         }
                     },
+                )
+            }
+            }
+
+            // 自主唤醒
+            item {
+            CardGroup(title = { Text("自主唤醒") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                item(
+                    leadingContent = { Icon(imageVector = HugeIcons.AlarmClock, contentDescription = null) },
+                    headlineContent = { Text("启用自主唤醒工具") },
+                    supportingContent = { Text("允许 AI 调用 schedule_wake / list_wakes / cancel_wake 工具设置定时唤醒计划。到点系统会唤醒 AI（注入唤醒备注），由 AI 自己决定是否主动发消息或调用工具，不依赖主动消息开关") },
+                    trailingContent = {
+                        Switch(
+                            checked = systemToolsSetting.wakeEnabled,
+                            onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(wakeEnabled = enabled)) }
+                        )
+                    }
                 )
             }
             }
