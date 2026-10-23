@@ -19,8 +19,6 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.TaskSetting
 import org.koin.java.KoinJavaComponent.getKoin
 import android.content.Context
-import android.content.Intent
-import me.rerere.rikkahub.ui.activity.TaskOverlayActivity
 
 fun createTaskTool(context: Context): Tool = Tool(
     name = "task",
@@ -80,10 +78,7 @@ fun createTaskTool(context: Context): Tool = Tool(
                 ))
             }
             try {
-                val intent = Intent(context, TaskOverlayActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                }
-                context.startActivity(intent)
+                me.rerere.rikkahub.data.service.TaskOverlayService.show(context)
             } catch (e: Exception) {
                 android.util.Log.w("TaskTool", "启动任务弹窗失败", e)
             }
@@ -115,7 +110,7 @@ fun createTaskStatusTool(): Tool = Tool(
             val task = store.settingsFlow.value.taskSetting
             val now = System.currentTimeMillis()
             val expired = task.status == "pending" && task.deadlineMillis > 0 && now > task.deadlineMillis
-            listOf(UIMessagePart.Text(
+            val textPart = UIMessagePart.Text(
                 buildJsonObject {
                     put("success", true)
                     put("status", task.status)
@@ -128,7 +123,12 @@ fun createTaskStatusTool(): Tool = Tool(
                     put("expired", expired)
                     put("remaining_minutes", if (task.deadlineMillis > 0) ((task.deadlineMillis - now) / 60_000).coerceAtLeast(0) else 0)
                 }.toString()
-            ))
+            )
+            if (task.submission.startsWith("file://")) {
+                listOf(textPart, UIMessagePart.Image(url = task.submission))
+            } else {
+                listOf(textPart)
+            }
         } catch (e: Exception) {
             listOf(UIMessagePart.Text(
                 buildJsonObject { put("success", false); put("error", e.message ?: "Unknown error") }.toString()

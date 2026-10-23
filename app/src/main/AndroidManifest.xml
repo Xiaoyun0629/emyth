@@ -88,14 +88,6 @@
       android:turnScreenOn="true"
       android:theme="@style/Theme.Rikkahub" />
     <activity
-      android:name=".ui.activity.TaskOverlayActivity"
-      android:exported="false"
-      android:excludeFromRecents="true"
-      android:launchMode="singleTask"
-      android:showWhenLocked="true"
-      android:turnScreenOn="true"
-      android:theme="@style/Theme.Rikkahub" />
-    <activity
       android:name=".ui.activity.AppLockAccessibilityPromptActivity"
       android:exported="false"
       android:excludeFromRecents="true"
@@ -231,6 +223,16 @@
       <property
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="floating bubble notification" />
+    </service>
+
+    <!-- 任务弹窗悬浮条服务 -->
+    <service
+      android:name=".data.service.TaskOverlayService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="task overlay" />
     </service>
 
     <!-- Supabase Sync Service -->
