@@ -90,6 +90,9 @@ data class SystemToolsSetting(
     // Lock Chat: 锁定对话, 到点自动解锁
     val lockChatEnabled: Boolean = false,
 
+    // Task: 任务弹窗, AI 发布任务+悬浮窗+审核完成
+    val taskEnabled: Boolean = false,
+
     // Fingerprint: verify_fingerprint 工具, 弹出系统指纹/人脸验证框验证用户身份
     val fingerprintEnabled: Boolean = false,
 ) {
@@ -124,6 +127,7 @@ data class SystemToolsSetting(
         if (appLockEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.AppLock)
         if (fingerprintEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.Fingerprint)
         if (lockChatEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.LockChat)
+        if (taskEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.Task)
         return options
     }
 }

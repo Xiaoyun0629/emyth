@@ -471,6 +471,13 @@ class VoiceCallService : Service(), KoinComponent {
                 if (_uiState.value.status == VoiceCallStatus.Processing && currentText.isNotBlank()) {
                     _uiState.update { it.copy(status = VoiceCallStatus.Speaking) }
                     startInterruptDetection()
+                    // AI 开始说话时暂停 ASR 录音，让出 VOICE_COMMUNICATION 独占音频焦点，
+                    // 否则 TTS 播放会被压哑（字幕正常但没声音）
+                    try {
+                        asr.stop()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "暂停 ASR 失败", e)
+                    }
                 }
 
                 lastAssistantText = currentText
@@ -488,6 +495,13 @@ class VoiceCallService : Service(), KoinComponent {
     }
 
     private suspend fun onGenerationDone() {
+        // 兜底：朗读前确保 ASR 已暂停（让出音频焦点给 TTS）
+        try {
+            asr.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "暂停 ASR 失败", e)
+        }
+
         // 朗读最后剩余的文本
         val finalText = _uiState.value.assistantText
         if (finalText.length > ttsSentLength) {

@@ -70,6 +70,8 @@ import me.rerere.hugeicons.stroke.Notification02
 import me.rerere.hugeicons.stroke.HardDrive
 import me.rerere.hugeicons.stroke.SlidersHorizontal
 import me.rerere.hugeicons.stroke.FingerPrint
+import me.rerere.hugeicons.stroke.Lock
+import me.rerere.hugeicons.stroke.CheckList
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.rikkahub.data.ai.tools.SystemTools
 import me.rerere.rikkahub.service.KeepAliveService
@@ -124,6 +126,43 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                 showLockColorPicker = false
             },
             onDismiss = { showLockColorPicker = false }
+        )
+    }
+
+    var showTaskBgColorPicker by remember { mutableStateOf(false) }
+    if (showTaskBgColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.taskSetting.backgroundColor,
+            defaultColor = MaterialTheme.colorScheme.surfaceVariant,
+            onConfirm = {
+                vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(backgroundColor = it)))
+                showTaskBgColorPicker = false
+            },
+            onDismiss = { showTaskBgColorPicker = false }
+        )
+    }
+    var showTaskBtnColorPicker by remember { mutableStateOf(false) }
+    if (showTaskBtnColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.taskSetting.buttonColor,
+            defaultColor = MaterialTheme.colorScheme.primary,
+            onConfirm = {
+                vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(buttonColor = it)))
+                showTaskBtnColorPicker = false
+            },
+            onDismiss = { showTaskBtnColorPicker = false }
+        )
+    }
+    var showTaskCdColorPicker by remember { mutableStateOf(false) }
+    if (showTaskCdColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.taskSetting.countdownColor,
+            defaultColor = MaterialTheme.colorScheme.error,
+            onConfirm = {
+                vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(countdownColor = it)))
+                showTaskCdColorPicker = false
+            },
+            onDismiss = { showTaskCdColorPicker = false }
         )
     }
 
@@ -1238,6 +1277,7 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             item {
             CardGroup(title = { Text("锁对话") }, modifier = Modifier.padding(horizontal = 8.dp)) {
                 item(
+                    leadingContent = { Icon(imageVector = HugeIcons.Lock, contentDescription = null) },
                     headlineContent = { Text("启用锁对话工具") },
                     supportingContent = { Text("允许 AI 调用 lock_chat 工具锁定对话，锁定期内你无法发送消息（仍可查看聊天记录），到点自动解锁，用于强制休息或睡觉") },
                     trailingContent = {
@@ -1262,6 +1302,83 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                             if (settings.lockChatSetting.lockBackgroundColor != null) {
                                 TextButton(onClick = {
                                     vm.updateSettings(settings.copy(lockChatSetting = settings.lockChatSetting.copy(lockBackgroundColor = null)))
+                                }) { Text("重置") }
+                            }
+                        }
+                    },
+                )
+            }
+            }
+
+            // 任务弹窗
+            item {
+            CardGroup(title = { Text("任务弹窗") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                item(
+                    leadingContent = { Icon(imageVector = HugeIcons.CheckList, contentDescription = null) },
+                    headlineContent = { Text("启用任务弹窗工具") },
+                    supportingContent = { Text("允许 AI 调用 task 工具发布任务弹窗（内容+类型+倒计时+惩罚），你提交文字或拍照后由 AI 审核，通过才算完成") },
+                    trailingContent = {
+                        Switch(
+                            checked = systemToolsSetting.taskEnabled,
+                            onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(taskEnabled = enabled)) }
+                        )
+                    }
+                )
+                item(
+                    headlineContent = { Text("背景颜色") },
+                    supportingContent = { Text("任务弹窗的背景色") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.taskSetting.backgroundColor?.toComposeColor() ?: Color.Gray,
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showTaskBgColorPicker = true }) { Text("自定义") }
+                            if (settings.taskSetting.backgroundColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(backgroundColor = null)))
+                                }) { Text("重置") }
+                            }
+                        }
+                    },
+                )
+                item(
+                    headlineContent = { Text("按钮颜色") },
+                    supportingContent = { Text("任务弹窗提交按钮的颜色") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.taskSetting.buttonColor?.toComposeColor() ?: Color.Gray,
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showTaskBtnColorPicker = true }) { Text("自定义") }
+                            if (settings.taskSetting.buttonColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(buttonColor = null)))
+                                }) { Text("重置") }
+                            }
+                        }
+                    },
+                )
+                item(
+                    headlineContent = { Text("倒计时颜色") },
+                    supportingContent = { Text("任务弹窗倒计时文字的颜色") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.taskSetting.countdownColor?.toComposeColor() ?: Color.Gray,
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showTaskCdColorPicker = true }) { Text("自定义") }
+                            if (settings.taskSetting.countdownColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(taskSetting = settings.taskSetting.copy(countdownColor = null)))
                                 }) { Text("重置") }
                             }
                         }

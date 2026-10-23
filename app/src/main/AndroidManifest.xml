@@ -88,6 +88,14 @@
       android:turnScreenOn="true"
       android:theme="@style/Theme.Rikkahub" />
     <activity
+      android:name=".ui.activity.TaskOverlayActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:theme="@style/Theme.Rikkahub" />
+    <activity
       android:name=".ui.activity.AppLockAccessibilityPromptActivity"
       android:exported="false"
       android:excludeFromRecents="true"
