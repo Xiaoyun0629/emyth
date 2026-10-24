@@ -253,6 +253,23 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text("系统配置（MCP）") },
+                supportingContent = { Text("让 AI 帮你把 MCP 服务器直接配置进橘瓣，无需手动添加") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.ConfigureMcp),
+                        onCheckedChange = {
+                            val newLocalTools = if (it) {
+                                assistant.localTools + LocalToolOption.ConfigureMcp
+                            } else {
+                                assistant.localTools - LocalToolOption.ConfigureMcp
+                            }
+                            onUpdate(assistant.copy(localTools = newLocalTools))
+                        }
+                    )
+                }
+            )
         }
     }
 }

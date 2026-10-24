@@ -23,10 +23,15 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
+import me.rerere.rikkahub.data.ai.mcp.McpManager
+import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
+import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.utils.readClipboardText
 import me.rerere.rikkahub.utils.writeClipboardText
+import org.koin.java.KoinJavaComponent.getKoin
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.TextStyle
@@ -124,6 +129,14 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("ssh")
     data object Ssh : LocalToolOption()
+
+    /**
+     * 系统配置. 开启后注册 configure_mcp 工具, AI 可帮用户把 MCP 服务器
+     * 直接配置进橘瓣(写配置 + 连接), 无需用户手动添加.
+     */
+    @Serializable
+    @SerialName("configure_mcp")
+    data object ConfigureMcp : LocalToolOption()
 }
  
 class LocalTools(
@@ -589,6 +602,89 @@ class LocalTools(
         return tools
     }
 
+    /**
+     * 配置橘瓣里的 MCP 服务器（帮用户直接添加好，无需手动操作）。
+     */
+    private fun createConfigureMcpTool() = Tool(
+        name = "configure_mcp",
+        needsApproval = true,
+        description = "配置橘瓣里的 MCP 服务器：action=add 添加(name/url/type/token)，action=remove 删除(name)，action=list 列出已配置的 MCP。url 形如 http://120.76.178.0:8877/mcp。type 默认 streamable_http，可选 sse。",
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("action", buildJsonObject {
+                        put("type", "string")
+                        put("description", "add / remove / list")
+                    })
+                    put("name", buildJsonObject {
+                        put("type", "string")
+                        put("description", "MCP 名称")
+                    })
+                    put("url", buildJsonObject {
+                        put("type", "string")
+                        put("description", "MCP 地址")
+                    })
+                    put("type", buildJsonObject {
+                        put("type", "string")
+                        put("description", "streamable_http 或 sse，默认 streamable_http")
+                    })
+                    put("token", buildJsonObject {
+                        put("type", "string")
+                        put("description", "可选，鉴权 token（自动加到 Authorization: Bearer）")
+                    })
+                },
+                required = listOf("action")
+            )
+        },
+        execute = { args ->
+            val params = args.jsonObject
+            val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+            val store = getKoin().get<SettingsStore>()
+            val mcpManager = getKoin().get<McpManager>()
+            when (action) {
+                "add" -> {
+                    val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val url = params["url"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    if (url.isBlank()) {
+                        return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"url 不能为空"}"""))
+                    }
+                    val type = params["type"]?.jsonPrimitive?.contentOrNull ?: "streamable_http"
+                    val token = params["token"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val headers = if (token.isNotBlank()) listOf("Authorization" to "Bearer $token") else emptyList()
+                    val common = McpCommonOptions(name = name.ifBlank { url }, headers = headers)
+                    val config: McpServerConfig = if (type == "sse") {
+                        McpServerConfig.SseTransportServer(commonOptions = common, url = url)
+                    } else {
+                        McpServerConfig.StreamableHTTPServer(commonOptions = common, url = url)
+                    }
+                    store.update { st ->
+                        st.copy(mcpServers = st.mcpServers.filterNot { it.commonOptions.name == common.name } + config)
+                    }
+                    mcpManager.addClient(config)
+                    listOf(UIMessagePart.Text("""{"success":true,"name":"${common.name}","url":"$url","type":"$type"}"""))
+                }
+                "remove" -> {
+                    val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val targets = store.settingsFlow.value.mcpServers.filter { it.commonOptions.name == name }
+                    store.update { st -> st.copy(mcpServers = st.mcpServers.filterNot { it.commonOptions.name == name }) }
+                    targets.forEach { mcpManager.removeClient(it) }
+                    listOf(UIMessagePart.Text("""{"success":true,"removed":${targets.size}}"""))
+                }
+                else -> {
+                    val servers = store.settingsFlow.value.mcpServers
+                    val info = if (servers.isEmpty()) "未配置任何 MCP" else servers.joinToString("\n") { c ->
+                        val u = when (c) {
+                            is McpServerConfig.SseTransportServer -> c.url
+                            is McpServerConfig.StreamableHTTPServer -> c.url
+                        }
+                        "- ${c.commonOptions.name} → $u"
+                    }
+                    listOf(UIMessagePart.Text(info))
+                }
+            }
+        }
+    )
+
     private fun buildTools(
         options: List<LocalToolOption>,
         conversationId: String? = null,
@@ -636,6 +732,9 @@ class LocalTools(
             tools.add(me.rerere.rikkahub.data.ai.tools.local.scrollTool(invocationContext))
             tools.add(me.rerere.rikkahub.data.ai.tools.local.globalActionTool(invocationContext))
             tools.add(me.rerere.rikkahub.data.ai.tools.local.takeScreenshotTool(context))
+        }
+        if (options.contains(LocalToolOption.ConfigureMcp)) {
+            tools.add(createConfigureMcpTool())
         }
         if (options.contains(LocalToolOption.Ssh)) {
             tools.add(me.rerere.rikkahub.data.ai.tools.local.sshExecTool(context))
