@@ -615,6 +615,11 @@ class VoiceCallService : Service(), KoinComponent {
         interruptDetectJob?.cancel()
         interruptDetectJob = serviceScope.launch {
             var baselineTranscript = _uiState.value.userTranscript
+            // 冷却期：AI 刚开始说话时先不响应打断，给 TTS 合成音频 + 开口的时间。
+            // 否则用户一插话，还没生成出来的那句 TTS 会被 tts.stop() 清掉，导致"上一句没声"。
+            delay(1200)
+            // 冷却结束，以当前转写为基线（冷却期内用户说的话不算打断，交给后续处理）
+            baselineTranscript = _uiState.value.userTranscript
             while (true) {
                 delay(150)
                 if (_uiState.value.status != VoiceCallStatus.Speaking) break

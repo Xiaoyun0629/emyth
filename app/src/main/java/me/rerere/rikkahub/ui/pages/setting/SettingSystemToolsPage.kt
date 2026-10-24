@@ -173,6 +173,7 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
     }
 
     var showVoiceBgColorPicker by remember { mutableStateOf(false) }
+    var showSubtitleColorPicker by remember { mutableStateOf(false) }
     if (showVoiceBgColorPicker) {
         ColorPickerDialog(
             initialColor = settings.voiceCallSetting.backgroundColor,
@@ -182,6 +183,17 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                 showVoiceBgColorPicker = false
             },
             onDismiss = { showVoiceBgColorPicker = false }
+        )
+    }
+    if (showSubtitleColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.voiceCallSetting.subtitleColor,
+            defaultColor = Color.White,
+            onConfirm = {
+                vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(subtitleColor = it)))
+                showSubtitleColorPicker = false
+            },
+            onDismiss = { showSubtitleColorPicker = false }
         )
     }
 
@@ -1468,6 +1480,26 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                                 TextButton(onClick = {
                                     vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(backgroundImage = "")))
                                 }) { Text("清除") }
+                            }
+                        }
+                    },
+                )
+                item(
+                    headlineContent = { Text("字幕颜色") },
+                    supportingContent = { Text("通话字幕文字的颜色") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.voiceCallSetting.subtitleColor?.toComposeColor() ?: Color.White,
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showSubtitleColorPicker = true }) { Text("自定义") }
+                            if (settings.voiceCallSetting.subtitleColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(subtitleColor = null)))
+                                }) { Text("重置") }
                             }
                         }
                     },

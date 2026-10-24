@@ -301,7 +301,9 @@ fun VoiceCallPage(
                     StreamingSubtitle(
                         text = uiState.assistantText,
                         accentColor = accentColor,
-                        label = assistantName.ifBlank { "AI" }
+                        label = assistantName.ifBlank { "AI" },
+                        subtitleColor = voiceBg.subtitleColor?.toComposeColor()
+                            ?: Color.White.copy(alpha = 0.92f)
                     )
                 }
                 // 你说的（用户）
@@ -309,7 +311,9 @@ fun VoiceCallPage(
                     StreamingSubtitle(
                         text = uiState.userTranscript,
                         accentColor = Color(0xCCFFFFFF),
-                        label = "我"
+                        label = "我",
+                        subtitleColor = voiceBg.subtitleColor?.toComposeColor()
+                            ?: Color.White.copy(alpha = 0.92f)
                     )
                 }
             }
@@ -413,6 +417,7 @@ private fun StreamingSubtitle(
     text: String,
     accentColor: Color,
     label: String? = null,
+    subtitleColor: Color = Color.White.copy(alpha = 0.92f),
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -441,7 +446,7 @@ private fun StreamingSubtitle(
         }
         Text(
             text = text.ifBlank { " " },
-            color = Color.White.copy(alpha = 0.92f),
+            color = subtitleColor,
             fontSize = 16.sp,
             lineHeight = 24.sp,
             fontWeight = FontWeight.Normal,

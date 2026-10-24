@@ -131,8 +131,8 @@ class TaskOverlayService : Service() {
             ?: android.graphics.Color.parseColor("#FFFF5C5C")
 
         val container = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
             val pad = dp(12)
             setPadding(pad, dp(10), pad, dp(10))
             background = GradientDrawable().apply {
@@ -145,8 +145,8 @@ class TaskOverlayService : Service() {
             text = task.content
             setTextColor(android.graphics.Color.WHITE)
             textSize = 14f
-            maxWidth = dp(220)
-            setPadding(0, 0, dp(10), 0)
+            maxWidth = dp(300)
+            setPadding(0, 0, 0, dp(8))
         }
 
         countdownText = TextView(this).apply {
@@ -176,9 +176,14 @@ class TaskOverlayService : Service() {
             }
         }
 
+        val bottomRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        bottomRow.addView(countdownText)
+        bottomRow.addView(doneButton)
         container.addView(taskText)
-        container.addView(countdownText)
-        container.addView(doneButton)
+        container.addView(bottomRow)
 
         overlayView = container
         layoutParams = WindowManager.LayoutParams(
