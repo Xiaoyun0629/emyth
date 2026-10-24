@@ -71,6 +71,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import org.koin.java.KoinJavaComponent.getKoin
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import kotlin.uuid.Uuid
@@ -307,7 +308,7 @@ fun VoiceCallPage(
                 if (uiState.userTranscript.isNotBlank()) {
                     StreamingSubtitle(
                         text = uiState.userTranscript,
-                        accentColor = Color.White.copy(alpha = 0.8f),
+                        accentColor = Color(0xCCFFFFFF),
                         label = "我"
                     )
                 }
