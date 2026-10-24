@@ -591,10 +591,10 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 val userMessage = UIMessage(
                     role = MessageRole.USER,
                     parts = listOf(UIMessagePart.Text(
-                        if (isFromDeviceEvent) {
-                            "请根据以上用户动向决定是否发消息。没什么好说的就回复 [PASS]。"
-                        } else {
-                            "请根据以上上下文决定是否发消息。没什么好说的就回复 [PASS] 即可，不要强行找话题。"
+                        when {
+                            isFromDeviceEvent -> "请根据以上用户动向决定是否发消息。没什么好说的就回复 [PASS]。"
+                            isScheduledWake -> "这是你之前主动设置的定时唤醒。请务必根据唤醒备注，主动给用户发一条自然、关心的消息。不要回复 [PASS]，你设这个唤醒就是为了在这个时刻找用户。"
+                            else -> "请根据以上上下文决定是否发消息。没什么好说的就回复 [PASS] 即可，不要强行找话题。"
                         }
                     ))
                 )

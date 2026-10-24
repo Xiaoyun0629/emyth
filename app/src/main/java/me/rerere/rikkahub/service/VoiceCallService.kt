@@ -730,6 +730,10 @@ class VoiceCallService : Service(), KoinComponent {
         interruptDetectJob?.cancel()
         asr.stop()
         tts.stop()
+        // 挂断时中断 AI 生成，避免"挂了还傻乎乎往下说"
+        serviceScope.launch {
+            runCatching { chatService.stopGeneration(conversationId) }
+        }
         _uiState.update {
             it.copy(status = VoiceCallStatus.Idle)
         }

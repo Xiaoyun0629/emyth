@@ -106,7 +106,7 @@ internal class CustomAsrStateImpl(
     private val idleState = MutableStateFlow(ASRState())
  
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+    private val audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         .setAudioAttributes(
             AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)

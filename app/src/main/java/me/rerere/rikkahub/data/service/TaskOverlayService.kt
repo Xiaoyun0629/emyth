@@ -30,6 +30,10 @@ import kotlinx.coroutines.launch
 import me.rerere.rikkahub.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import android.util.Log
+import android.widget.EditText
+import android.app.AlertDialog
+import java.io.File
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import androidx.compose.ui.graphics.toArgb
 import org.koin.java.KoinJavaComponent.getKoin
@@ -153,7 +157,7 @@ class TaskOverlayService : Service() {
         }
 
         val doneButton = TextView(this).apply {
-            text = "完成"
+            text = if (task.type == "photo") "拍照" else "提交"
             setTextColor(android.graphics.Color.WHITE)
             textSize = 13f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -164,17 +168,11 @@ class TaskOverlayService : Service() {
                 setColor(btnColor)
             }
             setOnClickListener {
-                scope.launch {
-                    val store = getKoin().get<SettingsStore>()
-                    store.update { s ->
-                        s.copy(taskSetting = s.taskSetting.copy(
-                            submission = "已提交（内容在聊天里补充）",
-                            submittedAt = System.currentTimeMillis(),
-                            status = "submitted",
-                        ))
-                    }
+                if (task.type == "photo") {
+                    takePhotoAndSubmit()
+                } else {
+                    showTextInputDialog()
                 }
-                stopSelf()
             }
         }
 
@@ -224,6 +222,10 @@ class TaskOverlayService : Service() {
         val shouldRemove = task.status == "approved" || task.status == "none" ||
             (task.status == "pending" && remaining <= 0 && task.deadlineMillis > 0)
         if (shouldRemove) {
+            // 超时且还没提交：执行惩罚（锁软件）
+            if (task.status == "pending" && remaining <= 0 && task.deadlineMillis > 0) {
+                applyPunishment(task.punishment)
+            }
             stopSelf()
         }
     }
@@ -236,6 +238,98 @@ class TaskOverlayService : Service() {
             }
             overlayView = null
         }
+    }
+
+    /** 文字提交：弹输入框，输入后提交 */
+    private fun showTextInputDialog() {
+        val editText = EditText(this).apply {
+            hint = "写点什么，让安焮审核"
+            setTextColor(android.graphics.Color.WHITE)
+            setHintTextColor(android.graphics.Color.GRAY)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("提交任务")
+            .setView(editText)
+            .setPositiveButton("提交") { _, _ ->
+                val text = editText.text.toString().trim()
+                if (text.isNotBlank()) {
+                    scope.launch {
+                        val store = getKoin().get<SettingsStore>()
+                        store.update { s ->
+                            s.copy(taskSetting = s.taskSetting.copy(
+                                submission = text,
+                                submittedAt = System.currentTimeMillis(),
+                                status = "submitted",
+                            ))
+                        }
+                    }
+                    stopSelf()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.window?.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+        dialog.show()
+    }
+
+    /** 拍照提交：调相机拍照，存图后提交（file:// 路径） */
+    private fun takePhotoAndSubmit() {
+        scope.launch {
+            val cameraService = CameraService(this@TaskOverlayService)
+            val result = runCatching {
+                kotlinx.coroutines.runBlocking { cameraService.capturePhoto(useFrontCamera = false, enableFlash = false) }
+            }.getOrNull()
+            if (result != null && result.success && result.imageData != null) {
+                val file = File(filesDir, "task_photo_${System.currentTimeMillis()}.jpg")
+                runCatching { file.outputStream().use { it.write(result.imageData) } }
+                val store = getKoin().get<SettingsStore>()
+                store.update { s ->
+                    s.copy(taskSetting = s.taskSetting.copy(
+                        submission = "file://${file.absolutePath}",
+                        submittedAt = System.currentTimeMillis(),
+                        status = "submitted",
+                    ))
+                }
+                stopSelf()
+            }
+        }
+    }
+
+    /** 超时惩罚：从 punishment 文本里提取 app 名，锁定该软件 */
+    private fun applyPunishment(punishment: String) {
+        if (punishment.isBlank()) return
+        val appName = parseAppName(punishment) ?: return
+        val pkg = resolvePackageName(appName) ?: return
+        runCatching { AppLockStore.lockApp(this, pkg) }
+        Log.i(TAG, "任务超时，锁定软件: $appName ($pkg)")
+    }
+
+    /** 从「锁抖音30分钟」这类文本里提取 app 名「抖音」 */
+    private fun parseAppName(punishment: String): String? {
+        val cleaned = punishment
+            .replace("锁", "")
+            .replace("定", "")
+            .replace(Regex("[0-9]+"), "")
+            .replace(Regex("(分钟|小时|秒|分|钟|个)"), "")
+            .trim()
+        return cleaned.ifBlank { null }
+    }
+
+    /** 把 app 显示名解析成包名 */
+    private fun resolvePackageName(appName: String): String? {
+        val pm = packageManager
+        val self = packageName
+        val apps = runCatching {
+            pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
+                .filter { it.packageName != self }
+                .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+        }.getOrNull() ?: return null
+        val exact = apps.filter { pm.getApplicationLabel(it).toString().equals(appName, ignoreCase = true) }
+        if (exact.size == 1) return exact[0].packageName
+        val contains = apps.filter { pm.getApplicationLabel(it).toString().contains(appName, ignoreCase = true) }
+        if (contains.size == 1) return contains[0].packageName
+        return null
     }
 
     private fun dp(v: Int): Int =
