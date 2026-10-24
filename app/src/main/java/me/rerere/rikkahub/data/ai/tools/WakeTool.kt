@@ -25,6 +25,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.datastore.ScheduledWake
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.service.ProactiveMessageService
+import me.rerere.rikkahub.data.service.ProactiveMessageReceiver
 import org.koin.java.KoinJavaComponent.getKoin
 
 private const val EXTRA_SCHEDULED_WAKE_NOTE = "scheduled_wake_note"
@@ -69,7 +70,7 @@ fun createScheduleWakeTool(context: Context): Tool = Tool(
             // 设置 AlarmManager
             try {
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                val intent = Intent(context, ProactiveMessageService::class.java).apply {
+                val intent = Intent(context, ProactiveMessageReceiver::class.java).apply {
                     action = ProactiveMessageService.ACTION_PROACTIVE_MESSAGE
                     putExtra(EXTRA_SCHEDULED_WAKE_NOTE, note)
                 }
