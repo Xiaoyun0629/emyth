@@ -82,6 +82,11 @@ import me.rerere.rikkahub.data.gadgetbridge.GadgetbridgeReader
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import me.rerere.rikkahub.data.files.FilesManager
+import org.koin.compose.koinInject
+import android.net.Uri
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.components.ui.RiskConfirmDialog
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -165,6 +170,31 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             },
             onDismiss = { showTaskCdColorPicker = false }
         )
+    }
+
+    var showVoiceBgColorPicker by remember { mutableStateOf(false) }
+    if (showVoiceBgColorPicker) {
+        ColorPickerDialog(
+            initialColor = settings.voiceCallSetting.backgroundColor,
+            defaultColor = Color(0xFF241A0B),
+            onConfirm = {
+                vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(backgroundColor = it)))
+                showVoiceBgColorPicker = false
+            },
+            onDismiss = { showVoiceBgColorPicker = false }
+        )
+    }
+
+    val filesManager: FilesManager = koinInject()
+    val voiceBgImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val localUris = filesManager.createChatFilesByContents(listOf(it))
+            localUris.firstOrNull()?.let { localUri ->
+                vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(backgroundImage = localUri.toString())))
+            }
+        }
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -1401,6 +1431,46 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                             onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(wakeEnabled = enabled)) }
                         )
                     }
+                )
+            }
+            }
+
+            // 通话背景
+            item {
+            CardGroup(title = { Text("通话背景") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                item(
+                    headlineContent = { Text("背景颜色") },
+                    supportingContent = { Text("语音通话界面的背景色") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(16.dp).background(
+                                    settings.voiceCallSetting.backgroundColor?.toComposeColor() ?: Color(0xFF241A0B),
+                                    CircleShape
+                                )
+                            )
+                            TextButton(onClick = { showVoiceBgColorPicker = true }) { Text("自定义") }
+                            if (settings.voiceCallSetting.backgroundColor != null) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(backgroundColor = null)))
+                                }) { Text("重置") }
+                            }
+                        }
+                    },
+                )
+                item(
+                    headlineContent = { Text("背景图片") },
+                    supportingContent = { Text("上传一张图片作为通话背景") },
+                    trailingContent = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { voiceBgImageLauncher.launch("image/*") }) { Text("选择图片") }
+                            if (settings.voiceCallSetting.backgroundImage.isNotBlank()) {
+                                TextButton(onClick = {
+                                    vm.updateSettings(settings.copy(voiceCallSetting = settings.voiceCallSetting.copy(backgroundImage = "")))
+                                }) { Text("清除") }
+                            }
+                        }
+                    },
                 )
             }
             }

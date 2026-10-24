@@ -692,6 +692,14 @@ class VoiceCallService : Service(), KoinComponent {
      * 切换静音. 在任何状态下都要能生效/取消, 不再判断 status.
      * 静音 = 模型听不到; 取消静音 = 不管 Listening 还是 Speaking 都重新开始监听.
      */
+    /** 打字发送消息（闭麦状态下也能打字发给我） */
+    fun sendTextMessage(text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) return
+        _uiState.update { it.copy(userTranscript = trimmed) }
+        sendCurrentMessage()
+    }
+
     fun toggleMute() {
         isMuted = !isMuted
         _uiState.update { it.copy(isMuted = isMuted) }

@@ -32,6 +32,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -58,9 +62,17 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.MicOff01
+import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
+import coil3.compose.AsyncImage
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import me.rerere.rikkahub.data.model.Avatar
+import me.rerere.rikkahub.data.datastore.SettingsStore
+import org.koin.java.KoinJavaComponent.getKoin
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import kotlin.uuid.Uuid
 
 private const val TAG = "VoiceCallPage"
@@ -101,6 +113,12 @@ fun VoiceCallPage(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val settingsStore = remember { getKoin().get<SettingsStore>() }
+    val callSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+    val assistant = callSettings.getCurrentAssistant()
+    val assistantAvatar = assistant.avatar
+    val assistantName = assistant.name
+    var textInput by remember { mutableStateOf("") }
     var boundService by remember { mutableStateOf<VoiceCallService?>(null) }
 
     // 录音权限
@@ -173,10 +191,12 @@ fun VoiceCallPage(
         label = "accentColor"
     )
 
+    val voiceBg = callSettings.voiceCallSetting
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ColorBgWarm)
+            .background(voiceBg.backgroundColor?.toComposeColor() ?: ColorBgWarm)
             // 叠加一层跟随状态的径向暖色光晕, 整屏融入当前状态色
             // (透明度调高, 让背景真的透出暖色, 而不是死黑一片)
             .drawBehind {
@@ -197,6 +217,15 @@ fun VoiceCallPage(
                 )
             }
     ) {
+        // 背景图（如果设置了）
+        if (voiceBg.backgroundImage.isNotBlank()) {
+            AsyncImage(
+                model = voiceBg.backgroundImage,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -218,12 +247,33 @@ fun VoiceCallPage(
             ) {
                 Spacer(modifier = Modifier.size(40.dp))
 
-                VoiceOrb(
-                    amplitudes = uiState.amplitudes,
-                    status = uiState.status,
-                    baseColor = accentColor,
-                    size = 200.dp
-                )
+                // 头像（代替光球）
+                Box(modifier = Modifier.size(200.dp)) {
+                    when (val av = assistantAvatar) {
+                        is Avatar.Image -> AsyncImage(
+                            model = av.url,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        is Avatar.Emoji -> Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(av.content, fontSize = 120.sp)
+                        }
+                        is Avatar.Dummy -> Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                assistantName.firstOrNull()?.toString()?.uppercase() ?: "A",
+                                fontSize = 80.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 // 绑定还没完成时, 显示一个小的加载指示器
                 if (boundService == null) {
@@ -240,18 +290,27 @@ fun VoiceCallPage(
             // - 聆听/思考: 显示用户刚说的话 (思考时保留, 让用户确认 AI 听到了什么)
             // - 传达/就绪: 显示 AI 的话 (传达时逐句增长, 说完后仍保留在屏上,
             //   直到下一轮用户开始说话、Service 清掉 assistantText 才换掉)
-            val subtitleText = when (uiState.status) {
-                VoiceCallStatus.Listening,
-                VoiceCallStatus.Processing -> uiState.userTranscript
-                VoiceCallStatus.Speaking,
-                VoiceCallStatus.Idle -> uiState.assistantText
-                VoiceCallStatus.Error -> ""
-            }
-            if (subtitleText.isNotBlank()) {
-                StreamingSubtitle(
-                    text = subtitleText,
-                    accentColor = accentColor
-                )
+            // 字幕区：分两块（我说的 / 你说的）
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                // 我说的（AI）
+                if (uiState.assistantText.isNotBlank()) {
+                    StreamingSubtitle(
+                        text = uiState.assistantText,
+                        accentColor = accentColor,
+                        label = assistantName.ifBlank { "AI" }
+                    )
+                }
+                // 你说的（用户）
+                if (uiState.userTranscript.isNotBlank()) {
+                    StreamingSubtitle(
+                        text = uiState.userTranscript,
+                        accentColor = Color.White.copy(alpha = 0.8f),
+                        label = "我"
+                    )
+                }
             }
 
             // 错误信息 (保留, 方便调试)
@@ -263,6 +322,42 @@ fun VoiceCallPage(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 32.dp)
                 )
+            }
+
+            // 打字输入框（闭麦也能打字发给我）
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                OutlinedTextField(
+                    value = textInput,
+                    onValueChange = { textInput = it },
+                    placeholder = { Text("打字发给我…", color = Color.White.copy(alpha = 0.5f)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = accentColor,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                        cursorColor = accentColor
+                    ),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 3
+                )
+                IconButton(onClick = {
+                    val msg = textInput
+                    if (msg.isNotBlank()) {
+                        boundService?.sendTextMessage(msg)
+                        textInput = ""
+                    }
+                }) {
+                    Icon(
+                        imageVector = HugeIcons.ArrowUp01,
+                        contentDescription = "发送",
+                        tint = accentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             // 底部: 只有两个按钮 (ChatGPT 风格)
@@ -316,6 +411,7 @@ fun VoiceCallPage(
 private fun StreamingSubtitle(
     text: String,
     accentColor: Color,
+    label: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -333,6 +429,15 @@ private fun StreamingSubtitle(
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (!label.isNullOrBlank()) {
+            Text(
+                text = label,
+                color = accentColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center
+            )
+        }
         Text(
             text = text.ifBlank { " " },
             color = Color.White.copy(alpha = 0.92f),

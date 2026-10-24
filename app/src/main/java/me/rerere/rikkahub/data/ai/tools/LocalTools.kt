@@ -437,6 +437,26 @@ class LocalTools(
         }
     )
  
+    /** AI 主动挂断当前语音通话 */
+    private fun createEndVoiceCallTool() = Tool(
+        name = "end_voice_call",
+        description = "Hang up the current voice call. Call this when you want to proactively end the ongoing voice conversation (for example, the user is done, or you need to stop). Returns success/failure.",
+        parameters = { InputSchema.Obj(properties = buildJsonObject { }, required = emptyList()) },
+        execute = {
+            val active = VoiceCallService.activeConversationId.value
+            if (active == null) {
+                return@Tool listOf(UIMessagePart.Text(buildJsonObject {
+                    put("success", false)
+                    put("reason", "no voice call in progress")
+                }.toString()))
+            }
+            VoiceCallService.stop(context)
+            listOf(UIMessagePart.Text(buildJsonObject {
+                put("success", true)
+            }.toString()))
+        }
+    )
+
     val webFetchTool by lazy {
         Tool(
             name = "web_fetch",
@@ -589,6 +609,7 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.RequestVoiceCall) && conversationId != null) {
             tools.add(createRequestVoiceCallTool(conversationId))
+            tools.add(createEndVoiceCallTool())
         }
         if (options.contains(LocalToolOption.AskUser)) {
             tools.add(askUserTool)
