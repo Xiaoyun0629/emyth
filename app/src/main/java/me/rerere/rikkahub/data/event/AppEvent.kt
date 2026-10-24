@@ -16,6 +16,16 @@ sealed class AppEvent {
      */
     data class RequestVoiceCall(val conversationId: String) : AppEvent()
 
+    /**
+     * 用户主动呼叫我，AI 自主决策完成后的结果。
+     * accept=true 接听；accept=false 拒接（reason 是拒接理由，可为空）。
+     */
+    data class IncomingCallDecision(
+        val conversationId: String,
+        val accept: Boolean,
+        val reason: String,
+    ) : AppEvent()
+
     /** MCP OAuth 授权完成后经 deep link 回传的结果。 */
     data class McpOAuthCallback(
         val state: String?,

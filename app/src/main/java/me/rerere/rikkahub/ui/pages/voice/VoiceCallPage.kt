@@ -63,6 +63,7 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.MicOff01
 import me.rerere.hugeicons.stroke.ArrowUp01
+import me.rerere.rikkahub.RouteActivity
 import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
@@ -114,6 +115,7 @@ fun VoiceCallPage(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val isInPip by RouteActivity.isInPip
     val settingsStore = remember { getKoin().get<SettingsStore>() }
     val callSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val assistant = callSettings.getCurrentAssistant()
@@ -227,6 +229,40 @@ fun VoiceCallPage(
                 contentScale = ContentScale.Crop
             )
         }
+        if (isInPip) {
+            // 画中画简化 UI：小光球 + 挂断
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                VoiceOrb(
+                    amplitudes = uiState.amplitudes,
+                    status = uiState.status,
+                    baseColor = accentColor,
+                    size = 120.dp
+                )
+                Spacer(modifier = Modifier.size(16.dp))
+                Surface(
+                    onClick = {
+                        VoiceCallService.stop(context)
+                        onBack()
+                    },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = HugeIcons.Cancel01,
+                            contentDescription = "挂断",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+        } else {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -389,6 +425,25 @@ fun VoiceCallPage(
                     enabled = canControl
                 )
 
+                // 切小屏按钮
+                Surface(
+                    onClick = {
+                        (context as? RouteActivity)?.enterPip()
+                    },
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.15f),
+                    modifier = Modifier.size(64.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = "小屏",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
                 // 挂断按钮
                 ControlButton(
                     icon = HugeIcons.Cancel01,
@@ -402,6 +457,7 @@ fun VoiceCallPage(
                     enabled = true // 挂断始终可点, 即使 service 还没绑定
                 )
             }
+        }
         }
     }
 }

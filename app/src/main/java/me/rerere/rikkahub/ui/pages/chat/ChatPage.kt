@@ -297,7 +297,7 @@ private fun ChatPageContent(
                         val activeId = VoiceCallService.activeConversationId.value
                         when {
                             activeId == null -> navController.navigate(
-                                Screen.VoiceCall(conversation.id.toString())
+                                Screen.Calling(conversation.id.toString())
                             )
                             activeId == conversation.id.toString() -> navController.navigate(
                                 Screen.VoiceCall(conversation.id.toString())

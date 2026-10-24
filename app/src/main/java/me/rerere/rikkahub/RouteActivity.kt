@@ -8,6 +8,8 @@ package me.rerere.rikkahub
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -185,6 +187,11 @@ import kotlin.uuid.Uuid
 private const val TAG = "RouteActivity"
 
 class RouteActivity : ComponentActivity() {
+    companion object {
+        /** 当前是否处于画中画（PiP）小窗模式，供通话页切换到简化 UI */
+        val isInPip = mutableStateOf(false)
+    }
+
     private val highlighter by inject<Highlighter>()
     private val okHttpClient by inject<OkHttpClient>()
     private val settingsStore by inject<SettingsStore>()
@@ -204,6 +211,27 @@ class RouteActivity : ComponentActivity() {
             if (volumeKeyListeners.lastOrNull()?.invoke(isVolumeUp) == true) return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        isInPip.value = isInPictureInPictureMode
+    }
+
+    /** 进入画中画小窗（供通话页"切小屏"按钮调用） */
+    fun enterPip() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                enterPictureInPictureMode(
+                    PictureInPictureParams.Builder().build()
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "进入画中画失败", e)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -388,6 +416,22 @@ class RouteActivity : ComponentActivity() {
                         val alreadyIncoming = backStack.lastOrNull() is Screen.IncomingCall
                         if (!alreadyIncoming) {
                             backStack.add(Screen.IncomingCall(convId))
+                        }
+                    }
+                    is AppEvent.IncomingCallDecision -> {
+                        val convId = event.conversationId
+                        // 只在"呼叫中"界面才响应（用户可能已经点了取消）
+                        if (backStack.lastOrNull() !is Screen.Calling) return@collect
+                        if (event.accept) {
+                            runCatching { tts.stop() }
+                            if (VoiceCallService.activeConversationId.value == null) {
+                                VoiceCallService.start(this@RouteActivity, convId)
+                            }
+                            backStack.removeLastOrNull()
+                            backStack.add(Screen.VoiceCall(convId))
+                        } else {
+                            // 拒接：理由已由 decideIncomingCall 追加进聊天，这里直接退出呼叫界面
+                            backStack.removeLastOrNull()
                         }
                     }
                 }
@@ -835,6 +879,31 @@ entry<Screen.Extensions> {
                                 )
                             }
 
+                            entry<Screen.Calling> { key ->
+                                val conversationRepo = koinInject<ConversationRepository>()
+                                val chatService = koinInject<ChatService>()
+                                var assistantName by remember {
+                                    mutableStateOf("")
+                                }
+                                LaunchedEffect(key.conversationId) {
+                                    assistantName = runCatching {
+                                        conversationRepo.getConversationById(Uuid.parse(key.conversationId))
+                                            ?.assistantId
+                                            ?.let { settings.getAssistantById(it)?.name }
+                                    }.getOrNull().orEmpty()
+                                }
+                                // 触发 AI 自主决策（接/拒）
+                                LaunchedEffect(key.conversationId) {
+                                    runCatching {
+                                        chatService.decideIncomingCall(Uuid.parse(key.conversationId))
+                                    }
+                                }
+                                CallingPage(
+                                    assistantName = assistantName,
+                                    onCancel = { backStack.removeLastOrNull() }
+                                )
+                            }
+
                             entry<Screen.MiniAppManager> {
                                 MiniAppManagerPage()
                             }
@@ -1120,6 +1189,12 @@ sealed interface Screen : NavKey {
      */
     @Serializable
     data class IncomingCall(val conversationId: String) : Screen
+
+    /**
+     * 用户主动呼叫我，等待 AI 自主决定接/拒的"呼叫中"界面。
+     */
+    @Serializable
+    data class Calling(val conversationId: String) : Screen
 
     @Serializable
     data object MiniAppManager : Screen

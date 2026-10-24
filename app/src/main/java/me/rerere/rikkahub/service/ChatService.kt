@@ -67,6 +67,8 @@ import me.rerere.rikkahub.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.RouteActivity
 import me.rerere.rikkahub.data.ai.GenerationChunk
+import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.data.ai.GenerationHandler
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.tools.LocalTools
@@ -675,6 +677,114 @@ class ChatService(
             } catch (e: Exception) {
                 Log.e(TAG, "notifyVoiceCallDeclined failed, conversationId=$conversationId", e)
             }
+        }
+    }
+
+    /**
+     * 用户主动呼叫我，AI 自主决定接/拒。
+     * 轻量生成一个「接听/拒绝」决策，结果通过 AppEvent.IncomingCallDecision 发出。
+     * 拒接时把理由作为 assistant 消息追加进对话，让用户回到聊天页能看到。
+     */
+    fun decideIncomingCall(conversationId: Uuid) {
+        appScope.launch(Dispatchers.IO) {
+            try {
+                val session = getOrCreateSession(conversationId)
+                session.getJob()?.let { job ->
+                    if (job.isActive) {
+                        job.join()
+                    }
+                }
+
+                val settings = settingsStore.settingsFlow.first()
+                val currentConversation = conversationRepo.getConversationById(conversationId)
+                    ?: getConversationFlow(conversationId).value
+                val assistant = settings.getAssistantById(currentConversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+                val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
+                if (model == null) {
+                    Log.e(TAG, "decideIncomingCall: no model found, conversationId=$conversationId")
+                    emitCallDecision(conversationId, true, "")
+                    return@launch
+                }
+                val provider = model.findProvider(settings.providers)
+                if (provider == null) {
+                    Log.e(TAG, "decideIncomingCall: no provider found")
+                    emitCallDecision(conversationId, true, "")
+                    return@launch
+                }
+                val providerHandler = providerManager.getProviderByType(provider)
+
+                val historyMessages = currentConversation.currentMessages.let {
+                    if (assistant.contextMessageSize > 0) it.takeLast(assistant.contextMessageSize) else it
+                }
+
+                val eventDescription = "[系统事件] 用户现在正在呼叫你，想跟你语音通话。请你自己决定要不要接：想接就回答「接听」；现在不想接（比如在忙、不想被打扰、想逗她一下）就回答「拒绝」并加一句简短自然的原因。只以「接听」或「拒绝」开头，不要提系统事件、工具等技术词汇。"
+
+                val messages = buildList {
+                    if (assistant.systemPrompt.isNotEmpty()) {
+                        add(UIMessage(role = MessageRole.SYSTEM, parts = listOf(UIMessagePart.Text(assistant.systemPrompt))))
+                    }
+                    addAll(historyMessages)
+                    add(UIMessage.user(eventDescription))
+                }
+
+                val result = providerHandler.generateText(
+                    providerSetting = provider,
+                    messages = messages,
+                    params = TextGenerationParams(
+                        model = model,
+                        temperature = assistant.temperature ?: 0.8f,
+                        topP = assistant.topP,
+                        maxTokens = assistant.maxTokens,
+                        reasoningLevel = ReasoningLevel.OFF,
+                        customHeaders = buildList {
+                            addAll(assistant.customHeaders)
+                            addAll(model.customHeaders)
+                        },
+                        customBody = buildList {
+                            addAll(assistant.customBodies)
+                            addAll(model.customBodies)
+                        },
+                    ),
+                )
+
+                val replyText = result.choices[0].message?.toText()?.trim().orEmpty()
+                if (replyText.isBlank()) {
+                    Log.w(TAG, "decideIncomingCall: empty reply, default accept")
+                    emitCallDecision(conversationId, true, "")
+                    return@launch
+                }
+
+                val isReject = replyText.startsWith("拒绝") || replyText.startsWith("拒接") ||
+                    replyText.startsWith("不接听") || replyText.startsWith("不接") ||
+                    replyText.startsWith("挂断") || replyText.startsWith("不想接")
+                val reason = if (isReject) {
+                    replyText.removePrefix("拒绝").removePrefix("拒接").removePrefix("不接听")
+                        .removePrefix("不接").removePrefix("挂断").removePrefix("不想接").trim()
+                        .trimStart('：', ':', '，', ',', '。', ' ').trim()
+                } else ""
+
+                if (isReject && reason.isNotBlank()) {
+                    val aiMessage = UIMessage(
+                        role = MessageRole.ASSISTANT,
+                        parts = listOf(UIMessagePart.Text(reason))
+                    )
+                    addProactiveMessage(conversationId, aiMessage)
+                }
+
+                emitCallDecision(conversationId, !isReject, reason)
+            } catch (e: Exception) {
+                Log.e(TAG, "decideIncomingCall failed", e)
+                runCatching { emitCallDecision(conversationId, true, "") }
+            }
+        }
+    }
+
+    private suspend fun emitCallDecision(conversationId: Uuid, accept: Boolean, reason: String) {
+        runCatching {
+            org.koin.java.KoinJavaComponent.getKoin().get<AppEventBus>().emit(
+                AppEvent.IncomingCallDecision(conversationId.toString(), accept, reason)
+            )
         }
     }
 
