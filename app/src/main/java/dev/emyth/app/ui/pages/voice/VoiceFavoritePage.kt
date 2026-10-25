@@ -45,6 +45,7 @@ import dev.emyth.app.data.event.AppEvent
 import dev.emyth.app.data.event.AppEventBus
 import dev.emyth.app.ui.components.nav.BackButton
 import dev.emyth.app.ui.theme.CustomColors
+import dev.emyth.app.utils.plus
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Delete01

@@ -454,12 +454,14 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                             text = text,
                             onReplay = { scope.launch { eventBus.emit(AppEvent.Speak(text)) } },
                             onFavorite = {
-                                val store = getKoin().get<SettingsStore>()
-                                store.update { setting ->
-                                    val fav = VoiceFavoriteItem(text = text, timestamp = System.currentTimeMillis())
-                                    val list = setting.voiceFavoriteSetting.favorites
-                                    val newList = if (list.any { it.text == text }) list else list + fav
-                                    setting.copy(voiceFavoriteSetting = setting.voiceFavoriteSetting.copy(favorites = newList))
+                                scope.launch {
+                                    val store = getKoin().get<SettingsStore>()
+                                    store.update { setting ->
+                                        val fav = VoiceFavoriteItem(text = text, timestamp = System.currentTimeMillis())
+                                        val list = setting.voiceFavoriteSetting.favorites
+                                        val newList = if (list.any { it.text == text }) list else list + fav
+                                        setting.copy(voiceFavoriteSetting = setting.voiceFavoriteSetting.copy(favorites = newList))
+                                    }
                                 }
                             }
                         )
