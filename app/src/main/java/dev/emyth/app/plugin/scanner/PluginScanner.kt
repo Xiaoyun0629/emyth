@@ -26,7 +26,7 @@ class PluginScanner(
     private val auditRepo: SecurityAuditRepository? = null,
 ) {
     companion object {
-        const val PLUGINS_DIR = "Orangechat/plugins"
+        const val PLUGINS_DIR = "Emyth/plugins"
         const val MANIFEST_FILE = "manifest.json"
     }
 
@@ -37,7 +37,7 @@ class PluginScanner(
 
     /**
      * 获取插件根目录
-     * 使用内部存储根目录 /storage/emulated/0/Orangechat/plugins/
+     * 使用内部存储根目录 /storage/emulated/0/Emyth/plugins/
      */
     val pluginsDir: File
         get() = File(Environment.getExternalStorageDirectory(), PLUGINS_DIR).apply { mkdirs() }

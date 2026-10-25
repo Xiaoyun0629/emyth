@@ -25,8 +25,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 // 更新检查源：Emyth自己的 GitHub Releases
-private const val GITHUB_OWNER = "sue1231513"
-private const val GITHUB_REPO = "orangechat"
+private const val GITHUB_OWNER = "Xiaoyun0629"
+private const val GITHUB_REPO = "emyth"
 private const val API_URL = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
 
 class UpdateChecker(private val client: OkHttpClient) {

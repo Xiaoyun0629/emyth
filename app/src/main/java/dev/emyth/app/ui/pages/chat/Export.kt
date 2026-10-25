@@ -492,7 +492,7 @@ private fun ExportedChatImage(
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                             )
                             Text(
-                                text = "${LocalDateTime.now().toLocalString()}  orangechat",
+                                text = "${LocalDateTime.now().toLocalString()}  Emyth",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

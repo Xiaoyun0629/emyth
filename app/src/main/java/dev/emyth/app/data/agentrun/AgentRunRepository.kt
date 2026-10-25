@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  *
  * The upstream ExTV/rikkahub-agent persists one cross-pillar "agent_runs" row per autonomous
  * run (cron / workflow / sub-agent / telegram / external-automation) for observability and
- * boot recovery. orangechat does not port that full ledger surface, so this stub keeps the
+ * boot recovery. Emyth does not port that full ledger surface, so this stub keeps the
  * [dev.emyth.app.workflow.execution.WorkflowEngine] source identical to upstream while
  * making the ledger calls cheap no-ops. [open] still returns a stable id so callers can keep
  * a handle; [markTerminal] simply discards it. If the ledger is ever ported, swap this class

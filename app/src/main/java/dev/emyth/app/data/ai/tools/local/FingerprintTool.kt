@@ -30,7 +30,7 @@ import java.util.UUID
  * ([BiometricPromptActivity]) 来承载系统弹窗, 弹窗结束后回填结果.
  *
  * 移植自 rikkahub-agent 的 FingerprintTool.kt, 把宿主 Activity 从 ToolHostActivity
- * 改为 orangechat 专用的 BiometricPromptActivity.
+ * 改为 Emyth 专用的 BiometricPromptActivity.
  */
 fun fingerprintTool(context: Context, buffer: BiometricResultBuffer): Tool = Tool(
     name = "verify_fingerprint",

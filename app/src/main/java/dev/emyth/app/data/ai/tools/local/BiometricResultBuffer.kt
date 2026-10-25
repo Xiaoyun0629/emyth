@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 前台 Activity (BiometricPromptActivity) 完成验证后调用 [BiometricResultBuffer.complete] 回填结果,
  * 从而让在后台/IO 协程里挂起等待的工具拿到结果继续执行.
  *
- * 移植自 rikkahub-agent 的 BiometricResultBuffer.kt, 适配 orangechat 的枚举驱动工具架构.
+ * 移植自 rikkahub-agent 的 BiometricResultBuffer.kt, 适配 Emyth 的枚举驱动工具架构.
  */
 sealed class BiometricResult {
     data class Success(val method: String) : BiometricResult()

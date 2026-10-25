@@ -83,7 +83,7 @@ fun WorkspaceTerminalPage(id: String) {
                 ),
             )
         },
-        // 终端使用纯黑背景；orangechat 的 RikkahubTheme 不支持 colorMode 参数，这里直接用 Surface 强制深色
+        // 终端使用纯黑背景；Emyth 的 RikkahubTheme 不支持 colorMode 参数，这里直接用 Surface 强制深色
         containerColor = Color.Black,
     ) { innerPadding ->
         WorkspaceTerminalContent(

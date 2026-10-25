@@ -14,7 +14,7 @@ import android.os.PowerManager
  * Reusable helpers so launch_app and any screen-automation tool that needs the screen on can
  * opt in without duplicating the wake-lock dance. Ported from the upstream agent fork's
  * WakeScreenTool.kt (only the [ScreenWaker] object; the `wake_screen` Tool itself is already
- * provided by orangechat's SystemTools, so it is intentionally NOT duplicated here).
+ * provided by Emyth's SystemTools, so it is intentionally NOT duplicated here).
  */
 internal object ScreenWaker {
     fun isInteractive(ctx: Context): Boolean =
