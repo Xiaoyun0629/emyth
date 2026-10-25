@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Camera01
+import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Location01
 import me.rerere.hugeicons.stroke.Notification02
 import me.rerere.hugeicons.stroke.SmartPhone01
@@ -296,6 +297,19 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                 title = { Text("后台保活") },
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
+                item(
+                    leadingContent = { Icon(imageVector = HugeIcons.Delete01, contentDescription = null) },
+                    headlineContent = { Text("允许助手删除其他助手") },
+                    supportingContent = { Text("开启后，AI 可删除其他助手（但不能删自己）") },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.allowAssistantDelete,
+                            onCheckedChange = { enabled ->
+                                vm.updateSettings(settings.copy(allowAssistantDelete = enabled))
+                            }
+                        )
+                    }
+                )
                 item(
                     leadingContent = { Icon(imageVector = HugeIcons.Pulse01, contentDescription = null) },
                     headlineContent = { Text(stringResource(R.string.setting_system_tools_keep_alive)) },

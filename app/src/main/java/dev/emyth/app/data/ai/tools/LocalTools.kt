@@ -27,6 +27,7 @@ import dev.emyth.app.data.ai.mcp.McpCommonOptions
 import dev.emyth.app.data.ai.mcp.McpManager
 import dev.emyth.app.data.ai.mcp.McpServerConfig
 import dev.emyth.app.data.datastore.SettingsStore
+import dev.emyth.app.data.datastore.getCurrentAssistant
 import dev.emyth.app.data.event.AppEventBus
 import dev.emyth.app.service.VoiceCallService
 import dev.emyth.app.utils.readClipboardText
@@ -685,6 +686,47 @@ class LocalTools(
         }
     )
 
+
+    private fun createDeleteAssistantTool() = Tool(
+        name = "delete_assistant",
+        needsApproval = true,
+        description = "删除一个 AI 助手。需要先开启「允许助手删除其他助手」的信任开关。不能删除当前正在使用的助手（自己）。",
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("assistant_id", buildJsonObject {
+                        put("type", "string")
+                        put("description", "要删除的助手 ID 或名字")
+                    })
+                },
+                required = listOf("assistant_id")
+            )
+        },
+        execute = { args ->
+            val params = args.jsonObject
+            val query = params["assistant_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val store = getKoin().get<SettingsStore>()
+            val settings = store.settingsFlow.value
+            if (!settings.allowAssistantDelete) {
+                return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未开启「允许助手删除其他助手」的信任开关"}"""))
+            }
+            val current = settings.getCurrentAssistant()
+            val target = settings.assistants.find {
+                it.id.toString() == query || it.name == query
+            }
+            if (target == null) {
+                return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未找到该助手"}"""))
+            }
+            if (target.id == current.id) {
+                return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"不能删除当前正在使用的助手（自己）"}"""))
+            }
+            store.update { st ->
+                st.copy(assistants = st.assistants.filter { it.id != target.id })
+            }
+            listOf(UIMessagePart.Text("""{"success":true,"deleted":"${target.name}"}"""))
+        }
+    )
+
     private fun buildTools(
         options: List<LocalToolOption>,
         conversationId: String? = null,
@@ -735,6 +777,7 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.ConfigureMcp)) {
             tools.add(createConfigureMcpTool())
+            tools.add(createDeleteAssistantTool())
         }
         if (options.contains(LocalToolOption.Ssh)) {
             tools.add(dev.emyth.app.data.ai.tools.local.sshExecTool(context))
