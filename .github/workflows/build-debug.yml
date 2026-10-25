@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   push:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,3 +53,15 @@ jobs:
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
+
+      - name: Publish Release
+        run: |
+          gh release create latest \
+            app/build/outputs/apk/debug/app-arm64-v8a-debug.apk \
+            app/build/outputs/apk/lock/app-arm64-v8a-lock.apk \
+            --title "Emyth 最新构建" \
+            --notes "自动编译的最新 APK（debug 版 + lock 版）。下载后安装即可。" \
+            --force \
+            --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
