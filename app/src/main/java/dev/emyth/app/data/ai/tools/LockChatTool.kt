@@ -76,3 +76,36 @@ fun createLockChatTool(): Tool = Tool(
         }
     }
 )
+
+
+fun createUnlockChatTool(): Tool = Tool(
+    name = "unlock_chat",
+    description = "解除当前对话的锁定，让用户可以重新发送消息。当用户申请解除锁定、且你同意时调用。",
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject { },
+            required = emptyList()
+        )
+    },
+    execute = {
+        try {
+            val store = getKoin().get<SettingsStore>()
+            store.update {
+                it.copy(lockChatSetting = LockChatSetting(lockedUntilMillis = 0, lockMessage = ""))
+            }
+            listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("success", true)
+                    put("result", "对话已解锁")
+                }.toString()
+            ))
+        } catch (e: Exception) {
+            listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("success", false)
+                    put("error", e.message ?: "Unknown error")
+                }.toString()
+            ))
+        }
+    }
+)

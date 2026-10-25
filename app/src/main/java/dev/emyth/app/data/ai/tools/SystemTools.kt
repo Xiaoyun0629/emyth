@@ -392,6 +392,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
     private val appSwitchTool by lazy { createAppSwitchTool(context) }
     private val appLockTool by lazy { createAppLockTool(context) }
     private val lockChatTool by lazy { createLockChatTool() }
+    private val unlockChatTool by lazy { createUnlockChatTool() }
     private val taskTool by lazy { createTaskTool(context) }
     private val taskStatusTool by lazy { createTaskStatusTool() }
     private val taskReviewTool by lazy { createTaskReviewTool() }
@@ -448,6 +449,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.AppSwitch in enabledTools) tools.add(appSwitchTool)
         if (SystemToolOption.AppLock in enabledTools) tools.add(appLockTool)
         if (SystemToolOption.LockChat in enabledTools) tools.add(lockChatTool)
+        if (SystemToolOption.LockChat in enabledTools) tools.add(unlockChatTool)
         if (SystemToolOption.Task in enabledTools) {
             tools.add(taskTool)
             tools.add(taskStatusTool)

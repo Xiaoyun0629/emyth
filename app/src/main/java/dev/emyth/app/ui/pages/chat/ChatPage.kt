@@ -321,7 +321,14 @@ private fun ChatPageContent(
                             lockRemaining = lockChat.lockedUntilMillis - System.currentTimeMillis()
                         }
                     }
-                    LockChatBar(remaining = lockRemaining, message = lockChat.lockMessage, backgroundColor = lockChat.lockBackgroundColor)
+                    LockChatBar(
+                        remaining = lockRemaining,
+                        message = lockChat.lockMessage,
+                        backgroundColor = lockChat.lockBackgroundColor,
+                        onRequestUnlock = {
+                            vm.handleMessageSend(listOf(UIMessagePart.Text("我申请解除锁定")))
+                        }
+                    )
                 } else {
                     ChatInput(
                     state = inputState,
@@ -630,7 +637,7 @@ private fun TopBar(
 }
 
 @Composable
-private fun LockChatBar(remaining: Long, message: String, backgroundColor: Long? = null) {
+private fun LockChatBar(remaining: Long, message: String, backgroundColor: Long? = null, onRequestUnlock: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().background(backgroundColor?.toComposeColor() ?: MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -644,6 +651,9 @@ private fun LockChatBar(remaining: Long, message: String, backgroundColor: Long?
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        TextButton(onClick = onRequestUnlock) {
+            Text("申请解除")
+        }
     }
 }
 
