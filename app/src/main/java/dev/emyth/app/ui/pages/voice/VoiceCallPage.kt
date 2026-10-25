@@ -182,6 +182,16 @@ fun VoiceCallPage(
         ?: MutableStateFlow(VoiceCallUiState()).asStateFlow())
         .collectAsStateWithLifecycle(initialValue = VoiceCallUiState())
 
+    // 监听通话结束: uiState 变回 Idle 时自动退出页面(覆盖 AI 主动挂断、以及任何导致通话结束的情况)
+    var hasCallStarted by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.status) {
+        if (uiState.status != VoiceCallStatus.Idle) {
+            hasCallStarted = true
+        } else if (hasCallStarted) {
+            onBack()
+        }
+    }
+
     // 返回键 = 切后台继续通话, 不挂断. 这是这次改动最核心的行为变化.
     BackHandler {
         onBack()
