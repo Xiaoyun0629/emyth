@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="docs/icon.png" alt="橘瓣" width="120" />
-  <h1>橘瓣</h1>
-  <p><strong>基於 RikkaHub 的增強版 Android AI 聊天客戶端</strong></p>
-  <p>在 RikkaHub 的基礎上，加入更多實用工具與個人化能力 🍊💬</p>
+  <img src="docs/icon.png" alt="Emyth" width="120" />
+  <h1>Emyth</h1>
+  <p><strong>基於橘瓣 OrangeChat 二次開發的 Android AI 聊天客戶端</strong></p>
+  <p>在橘瓣（基於 RikkaHub）的基礎上，加入更多實用工具與個人化能力</p>
 
   <p>
     <a href="README_ZH_CN.md">简体中文</a> ·
@@ -21,9 +21,9 @@
 
 ---
 
-## 🍊 橘瓣獨有功能
+## 🍊 Emyth 獨有功能
 
-> 以下為橘瓣在 RikkaHub 基礎上新增或增強的功能
+> 以下為Emyth在 RikkaHub 基礎上新增或增強的功能
 
 ### 🎨 個人化訂製
 - **頭像框** — 為 AI 助手頭像添加裝飾邊框，打造獨特視覺風格
@@ -99,15 +99,15 @@
 
 | 渠道 | 連結 |
 |------|------|
-| GitHub Releases | [sue1231513/orangechat/releases](https://github.com/sue1231513/orangechat/releases) |
-| 源碼 | [github.com/sue1231513/orangechat](https://github.com/sue1231513/orangechat) |
+| GitHub Releases | [Xiaoyun0629/emyth/releases](https://github.com/Xiaoyun0629/emyth/releases) |
+| 源碼 | [github.com/Xiaoyun0629/emyth](https://github.com/Xiaoyun0629/emyth) |
 
 ---
 
 ## 🏗️ 專案架構
 
 ```
-橘瓣/
+Emyth/
 ├── app/          # 主應用模組（UI、ViewModel、核心邏邏輯）
 ├── ai/           # AI SDK 抽象層（OpenAI / Google / Anthropic）
 ├── common/       # 通用工具與擴展
@@ -182,13 +182,13 @@
 
 喜歡這個專案？給個 Star ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=sue1231513/orangechat&type=Date)](https://star-history.com/#sue1231513/orangechat&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Xiaoyun0629/emyth&type=Date)](https://star-history.com/#Xiaoyun0629/emyth&Date)
 
 ---
 
 ## 📄 授權條款
 
-本專案是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的衍生作品，遵循與上游一致的 **使用者分段雙重授權 (Segmented Dual Licensing)** 模式：
+本專案是 [橘瓣 OrangeChat](https://github.com/sue1231513/orangechat) 的衍生作品（橘瓣本身衍生自 [RikkaHub](https://github.com/rikkahub/rikkahub)），遵循與上游一致的 **使用者分段雙重授權 (Segmented Dual Licensing)** 模式：
 
 - **非商業 / 個人 / 教育 / 研究**，或 **使用者總數不超過 10 人** 的組織 —— 遵循 [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html)（含原始碼公開義務）；
 - 商業用途、使用者超過 10 人，或希望免除 AGPL v3 義務 —— 需購買商業授權（聯絡原作者 `re_dev@qq.com`）。

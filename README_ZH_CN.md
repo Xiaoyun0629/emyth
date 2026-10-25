@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="docs/icon.png" alt="橘瓣" width="120" />
-  <h1>橘瓣</h1>
-  <p><strong>基于 RikkaHub 的增强版 Android AI 聊天客户端</strong></p>
-  <p>在 RikkaHub 的基础上，加入更多实用工具与个性化能力 🍊💬</p>
+  <img src="docs/icon.png" alt="Emyth" width="120" />
+  <h1>Emyth</h1>
+  <p><strong>基于橘瓣 OrangeChat 二次开发的 Android AI 聊天客户端</strong></p>
+  <p>在橘瓣（基于 RikkaHub）的基础上，加入更多实用工具与个性化能力</p>
 
   <p>
     简体中文 ·
@@ -21,9 +21,9 @@
 
 ---
 
-## 🍊 橘瓣独有功能
+## 🍊 Emyth 独有功能
 
-> 以下为橘瓣在 RikkaHub 基础上新增或增强的功能
+> 以下为Emyth在 RikkaHub 基础上新增或增强的功能
 
 ### 🎨 个性化定制
 - **头像框** — 为 AI 助手头像添加装饰边框，打造独特视觉风格
@@ -99,15 +99,15 @@
 
 | 渠道 | 链接 |
 |------|------|
-| GitHub Releases | [sue1231513/orangechat/releases](https://github.com/sue1231513/orangechat/releases) |
-| 源码 | [github.com/sue1231513/orangechat](https://github.com/sue1231513/orangechat) |
+| GitHub Releases | [Xiaoyun0629/emyth/releases](https://github.com/Xiaoyun0629/emyth/releases) |
+| 源码 | [github.com/Xiaoyun0629/emyth](https://github.com/Xiaoyun0629/emyth) |
 
 ---
 
 ## 🏗️ 项目架构
 
 ```
-橘瓣/
+Emyth/
 ├── app/          # 主应用模块（UI、ViewModel、核心逻辑）
 ├── ai/           # AI SDK 抽象层（OpenAI / Google / Anthropic）
 ├── common/       # 通用工具与扩展
@@ -182,13 +182,13 @@
 
 喜欢这个项目？给个 Star ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=sue1231513/orangechat&type=Date)](https://star-history.com/#sue1231513/orangechat&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Xiaoyun0629/emyth&type=Date)](https://star-history.com/#Xiaoyun0629/emyth&Date)
 
 ---
 
 ## 📄 许可证
 
-本项目是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的派生作品，遵循与上游一致的 **用户分段双重许可 (Segmented Dual Licensing)** 模式：
+本项目是 [橘瓣 OrangeChat](https://github.com/sue1231513/orangechat) 的派生作品（橘瓣本身派生自 [RikkaHub](https://github.com/rikkahub/rikkahub)），遵循与上游一致的 **用户分段双重许可 (Segmented Dual Licensing)** 模式：
 
 - **非商业 / 个人 / 教育 / 研究**，或 **用户总数不超过 10 人** 的组织 —— 遵循 [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html)（含源代码公开义务）；
 - 商业用途、用户超过 10 人，或希望免除 AGPL v3 义务 —— 需购买商业许可证（联系原作者 `re_dev@qq.com`）。
