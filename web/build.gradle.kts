@@ -32,7 +32,7 @@ val buildWebUi = tasks.register<Exec>("buildWebUi") {
 }
 
 android {
-    namespace = "me.rerere.rikkahub.web"
+    namespace = "dev.emyth.app.web"
     compileSdk {
         version = release(37)
     }

@@ -61,7 +61,7 @@
   </queries>
 
   <application
-    android:name=".RikkaHubApp"
+    android:name=".EmythApp"
     android:largeHeap="true"
     android:allowBackup="true"
     android:appCategory="productivity"
@@ -200,7 +200,7 @@
       android:name=".data.service.ProactiveMessageReceiver"
       android:exported="true">
       <intent-filter>
-        <action android:name="me.rerere.orangechat.PROACTIVE_MESSAGE" />
+        <action android:name="dev.emyth.app.PROACTIVE_MESSAGE" />
         <action android:name="android.intent.action.BOOT_COMPLETED" />
       </intent-filter>
     </receiver>
@@ -271,7 +271,7 @@
       android:name=".data.service.SupabaseSyncReceiver"
       android:exported="true">
       <intent-filter>
-        <action android:name="me.rerere.orangechat.SUPABASE_SYNC" />
+        <action android:name="dev.emyth.app.SUPABASE_SYNC" />
         <action android:name="android.intent.action.BOOT_COMPLETED" />
       </intent-filter>
     </receiver>
@@ -281,7 +281,7 @@
       android:name=".data.service.DailySummaryReceiver"
       android:exported="true">
       <intent-filter>
-        <action android:name="me.rerere.orangechat.DAILY_CRON" />
+        <action android:name="dev.emyth.app.DAILY_CRON" />
         <action android:name="android.intent.action.BOOT_COMPLETED" />
       </intent-filter>
     </receiver>
@@ -385,7 +385,7 @@
       android:name=".service.KeepAliveRestartReceiver"
       android:exported="false">
       <intent-filter>
-        <action android:name="me.rerere.orangechat.RESTART_KEEP_ALIVE" />
+        <action android:name="dev.emyth.app.RESTART_KEEP_ALIVE" />
       </intent-filter>
     </receiver>
 

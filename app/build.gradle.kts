@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.rikkahub"
+    namespace = "dev.emyth.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "me.rerere.orangechat"
+        applicationId = "dev.emyth.app"
         minSdk = 26
         targetSdk = 37
         versionCode = 159
