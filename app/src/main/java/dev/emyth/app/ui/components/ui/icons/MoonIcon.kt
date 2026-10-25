@@ -39,7 +39,7 @@ public val MoonIcon: ImageVector
                 arcTo(7f, 7f, 0f, false, false, 21f, 12.79f)
                 close()
             }
-        }
+        }.build()
         return _moonIcon!!
     }
 
