@@ -29,7 +29,9 @@ object SettingsJsonMigrator {
      */
     fun migrate(settingsJson: String): String {
         return runCatching {
-            val root = JsonInstant.parseToJsonElement(settingsJson).jsonObject.toMutableMap()
+            // V0: 全局替换旧包名 → 新包名（改包名导致 polymorphic type 字段的 serial name 失效）
+            val migratedJson = settingsJson.replace("me.rerere.rikkahub", "dev.emyth.app")
+            val root = JsonInstant.parseToJsonElement(migratedJson).jsonObject.toMutableMap()
 
             // V1: 修复 mcpServers 中全限定类名的 type 字段
             root["mcpServers"]?.let { element ->
