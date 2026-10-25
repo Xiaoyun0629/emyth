@@ -80,14 +80,11 @@ import dev.emyth.app.data.files.FilesManager
 import dev.emyth.app.ui.components.nav.BackButton
 import dev.emyth.app.ui.components.ui.CardGroup
 import dev.emyth.app.ui.components.ui.Select
-import dev.emyth.app.ui.components.ui.icons.DiscordIcon
-import dev.emyth.app.ui.components.ui.icons.TencentQQIcon
 import dev.emyth.app.ui.context.LocalNavController
 import dev.emyth.app.ui.context.Navigator
 import dev.emyth.app.ui.hooks.rememberColorMode
 import dev.emyth.app.ui.theme.ColorMode
 import dev.emyth.app.ui.theme.CustomColors
-import dev.emyth.app.utils.joinQQGroup
 import dev.emyth.app.utils.openUrl
 import dev.emyth.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -354,35 +351,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         onClick = { navController.navigate(Screen.SettingAbout) },
                         leadingContent = { Icon(HugeIcons.Clapping01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_about_desc)) },
-                        trailingContent = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        context.joinQQGroup("Qsm0whzbPsm1UyNpR683ulLyMZ2Pqrw0")
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = TencentQQIcon,
-                                        contentDescription = "QQ",
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        context.openUrl("https://discord.gg/9weBqxe5c4")
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = DiscordIcon,
-                                        contentDescription = "Discord",
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
-                            }
-                        },
                         headlineContent = { Text(stringResource(R.string.setting_page_about)) },
                     )
                     item(
