@@ -89,6 +89,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.highlight.HighlightText
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Favourite
 import me.rerere.hugeicons.stroke.BubbleChatQuestion
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Clipboard
@@ -137,6 +138,9 @@ import dev.emyth.app.utils.JsonInstant
 import dev.emyth.app.utils.JsonInstantPretty
 import dev.emyth.app.utils.jsonPrimitiveOrNull
 import dev.emyth.app.utils.openUrl
+import dev.emyth.app.data.datastore.SettingsStore
+import dev.emyth.app.data.datastore.VoiceFavoriteItem
+import org.koin.java.KoinJavaComponent.getKoin
 import org.koin.compose.koinInject
 
 private object ToolNames {
@@ -448,7 +452,16 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                         val text = arguments.getStringContent("text") ?: ""
                         TtsVoiceBar(
                             text = text,
-                            onReplay = { scope.launch { eventBus.emit(AppEvent.Speak(text)) } }
+                            onReplay = { scope.launch { eventBus.emit(AppEvent.Speak(text)) } },
+                            onFavorite = {
+                                val store = getKoin().get<SettingsStore>()
+                                store.update { setting ->
+                                    val fav = VoiceFavoriteItem(text = text, timestamp = System.currentTimeMillis())
+                                    val list = setting.voiceFavoriteSetting.favorites
+                                    val newList = if (list.any { it.text == text }) list else list + fav
+                                    setting.copy(voiceFavoriteSetting = setting.voiceFavoriteSetting.copy(favorites = newList))
+                                }
+                            }
                         )
                     }
                     if ((tool.toolName == ToolNames.ZIP_FILES || tool.toolName == ToolNames.WRITE_FILES) && tool.isExecuted && content != null) {
@@ -1184,7 +1197,8 @@ private data class AskUserQuestion(
 @Composable
 private fun TtsVoiceBar(
     text: String,
-    onReplay: () -> Unit
+    onReplay: () -> Unit,
+    onFavorite: () -> Unit
 ) {
     val ttsState = LocalTTSState.current
     val playbackState by ttsState.playbackState.collectAsState()
@@ -1273,6 +1287,18 @@ private fun TtsVoiceBar(
             fontSize = 10.sp,
             modifier = Modifier.width(28.dp),
             textAlign = TextAlign.End
+        )
+
+        Spacer(modifier = Modifier.width(6.dp))
+
+        // 收藏按钮
+        Icon(
+            imageVector = HugeIcons.Favourite,
+            contentDescription = "收藏",
+            tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+            modifier = Modifier
+                .size(15.dp)
+                .clickable { onFavorite() }
         )
     }
 }

@@ -173,6 +173,7 @@ import dev.emyth.app.ui.pages.translator.TranslatorPage
  import dev.emyth.app.ui.pages.voice.CallingPage
 import dev.emyth.app.ui.pages.voice.IncomingCallPage
  import dev.emyth.app.ui.pages.voice.VoiceCallPage
+import dev.emyth.app.ui.pages.voice.VoiceFavoritePage
 import dev.emyth.app.service.VoiceCallService
 import dev.emyth.app.ui.pages.webview.WebViewPage
 import dev.emyth.app.ui.theme.LocalDarkMode
@@ -644,6 +645,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingSearchDetailPage(id)
                             }
 
+                            entry<Screen.VoiceFavorite> {
+                                VoiceFavoritePage()
+                            }
+
                             entry<Screen.SettingSpeech> {
                                 SettingSpeechPage()
                             }
@@ -985,6 +990,7 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Favorite : Screen
+    data object VoiceFavorite : Screen
 
     @Serializable
     data object Assistant : Screen

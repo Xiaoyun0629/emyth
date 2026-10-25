@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiMagic
+import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.Alert01
 import me.rerere.hugeicons.stroke.CloudServer
 import me.rerere.hugeicons.stroke.Book01
@@ -201,6 +202,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.Package, null) },
                         supportingContent = { Text("管理本地插件，导入ZIP插件包") },
                         headlineContent = { Text("插件管理") },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.VoiceFavorite) },
+                        leadingContent = { Icon(HugeIcons.Mic01, null) },
+                        supportingContent = { Text("收藏的 AI 语音，随时回听") },
+                        headlineContent = { Text("语音收藏") },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingSecurity) },

@@ -166,6 +166,7 @@ class SettingsStore(
         // 主动消息设置
         val PROACTIVE_MESSAGE_SETTING = stringPreferencesKey("proactive_message_setting")
         val LOCK_CHAT_SETTING = stringPreferencesKey("lock_chat_setting")
+        val VOICE_FAVORITE_SETTING = stringPreferencesKey("voice_favorite_setting")
         val TASK_SETTING = stringPreferencesKey("task_setting")
         val WAKES_SETTING = stringPreferencesKey("wakes_setting")
         val VOICE_CALL_SETTING = stringPreferencesKey("voice_call_setting")
@@ -300,6 +301,9 @@ class SettingsStore(
                 lockChatSetting = preferences[LOCK_CHAT_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: LockChatSetting(),
+                voiceFavoriteSetting = preferences[VOICE_FAVORITE_SETTING]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: VoiceFavoriteSetting(),
                 taskSetting = preferences[TASK_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: TaskSetting(),
@@ -499,6 +503,7 @@ class SettingsStore(
             preferences[SYSTEM_TOOLS_SETTING] = JsonInstant.encodeToString(settings.systemToolsSetting)
             preferences[PROACTIVE_MESSAGE_SETTING] = JsonInstant.encodeToString(settings.proactiveMessageSetting)
             preferences[LOCK_CHAT_SETTING] = JsonInstant.encodeToString(settings.lockChatSetting)
+            preferences[VOICE_FAVORITE_SETTING] = JsonInstant.encodeToString(settings.voiceFavoriteSetting)
             preferences[TASK_SETTING] = JsonInstant.encodeToString(settings.taskSetting)
             preferences[WAKES_SETTING] = JsonInstant.encodeToString(settings.wakeSetting)
             preferences[VOICE_CALL_SETTING] = JsonInstant.encodeToString(settings.voiceCallSetting)
@@ -643,6 +648,7 @@ data class Settings(
     val systemToolsSetting: SystemToolsSetting = SystemToolsSetting(),
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(),
     val lockChatSetting: LockChatSetting = LockChatSetting(),
+    val voiceFavoriteSetting: VoiceFavoriteSetting = VoiceFavoriteSetting(),
     val taskSetting: TaskSetting = TaskSetting(),
     val wakeSetting: WakeSetting = WakeSetting(),
     val voiceCallSetting: VoiceCallSetting = VoiceCallSetting(),
