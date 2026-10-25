@@ -102,7 +102,7 @@ private fun DonateMethodsCardGroup() {
         title = { Text(stringResource(R.string.donate_page_donation_methods)) },
     ) {
         item(
-            onClick = { context.openUrl("https://github.com/sue1231513/orangechat") },
+            onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth") },
             leadingContent = {
                 AsyncImage(
                     model = R.drawable.kofi,
@@ -114,7 +114,7 @@ private fun DonateMethodsCardGroup() {
             headlineContent = { Text("GitHub") },
         )
         item(
-            onClick = { context.openUrl("https://github.com/sue1231513/orangechat") },
+            onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth") },
             leadingContent = {
                 Icon(
                     painter = painterResource(R.drawable.afdian),

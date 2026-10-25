@@ -168,26 +168,26 @@ fun SettingAboutPage() {
                         modifier = Modifier.padding(horizontal = 8.dp),
                     ) {
                         item(
-                            onClick = { context.openUrl("https://github.com/sue1231513/orangechat") },
+                            onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth") },
                             leadingContent = { Icon(HugeIcons.Earth, null) },
                             supportingContent = {
-                                Text("https://github.com/sue1231513/orangechat")
+                                Text("https://github.com/Xiaoyun0629/emyth")
                             },
                             headlineContent = { Text(stringResource(R.string.about_page_website)) },
                         )
                         item(
-                            onClick = { context.openUrl("https://github.com/sue1231513/orangechat") },
+                            onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth") },
                             leadingContent = { Icon(HugeIcons.Github, null) },
                             supportingContent = {
-                                Text("https://github.com/sue1231513/orangechat")
+                                Text("https://github.com/Xiaoyun0629/emyth")
                             },
                             headlineContent = { Text(stringResource(R.string.about_page_github)) },
                         )
                         item(
-                            onClick = { context.openUrl("https://github.com/sue1231513/orangechat/blob/master/LICENSE") },
+                            onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth/blob/main/LICENSE") },
                             leadingContent = { Icon(HugeIcons.File02, null) },
                             supportingContent = {
-                                Text("https://github.com/sue1231513/orangechat/blob/master/LICENSE")
+                                Text("https://github.com/Xiaoyun0629/emyth/blob/main/LICENSE")
                             },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
                         )

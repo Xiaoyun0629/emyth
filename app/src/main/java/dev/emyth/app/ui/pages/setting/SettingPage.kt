@@ -386,7 +386,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_about)) },
                     )
                     item(
-                        onClick = { context.openUrl("https://github.com/sue1231513/orangechat") },
+                        onClick = { context.openUrl("https://github.com/Xiaoyun0629/emyth") },
                         leadingContent = { Icon(HugeIcons.Book01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_documentation_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_documentation)) },
