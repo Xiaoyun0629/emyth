@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="docs/icon.png" alt="橘瓣" width="120" />
+<img src="docs/icon.png" alt="Emyth" width="120" />
 
-<h1>橘瓣 OrangeChat</h1>
+<h1>Emyth</h1>
 
 <p><strong>不止是聊天 · 更是生活在一起的 AI 伴侣平台</strong></p>
 
-<p>基于 <a href="https://github.com/rikkahub/rikkahub">RikkaHub</a> 深度定制的 Android AI 客户端<br/>在原生聊天体验之上，构建了完整的插件生态与智能生活服务</p>
+<p>基于 <a href="https://github.com/sue1231513/orangechat">橘瓣 OrangeChat</a> 二次开发的 Android AI 客户端<br/>而橘瓣基于 <a href="https://github.com/rikkahub/rikkahub">RikkaHub</a> 深度定制<br/>在原生聊天体验之上，构建了完整的插件生态与智能生活服务</p>
 
 <p>
   <img src="https://img.shields.io/badge/Kotlin-100%25-7F52FF" alt="Kotlin" />
@@ -18,7 +18,7 @@
 
 ---
 
-## 🍊 为什么做橘瓣
+## 🍊 为什么做Emyth
 
 原版 RikkaHub 是一个优秀的 AI 聊天客户端，支持多供应商、MCP 协议、富文本渲染等功能。
 
@@ -28,15 +28,15 @@
 > 它应该能陪你一起看书、一起养宠物、一起经营一家小商店。
 > 它应该能记住你说过的每一句重要的话，在你需要的时候主动出现。
 
-**橘瓣就是这样一个尝试。**
+**Emyth就是这样一个尝试。**
 
 ---
 
-## ✨ 橘瓣独有功能
+## ✨ Emyth独有功能
 
 ### 🧩 插件系统（核心）
 
-橘瓣最核心的新增。基于 QuickJS 沙箱的完整插件框架，让 JS 插件能安全执行并调用宿主能力。
+Emyth最核心的新增。基于 QuickJS 沙箱的完整插件框架，让 JS 插件能安全执行并调用宿主能力。
 
 ```
 plugin/
@@ -121,7 +121,7 @@ AI 不只是被动等你说话。让 AI 能在你需要的时候主动出现—�
 与原版 RikkaHub 的代码差异（基于仓库实际文件对比）：
 
 ```
-原版 RikkaHub                    橘瓣 OrangeChat
+原版 RikkaHub                    Emyth
 ├── 3 个 Service                  ├── 18 个 Service (+15)
 │   ├── ChatService               │   ├── ChatService (增强)
 │   ├── ConversationSession       │   ├── ConversationSession
@@ -157,7 +157,7 @@ AI 不只是被动等你说话。让 AI 能在你需要的时候主动出现—�
 
 ## 🧩 开发插件
 
-橘瓣的插件系统基于 QuickJS 沙箱，一个插件由以下文件组成：
+Emyth的插件系统基于 QuickJS 沙箱，一个插件由以下文件组成：
 
 ```
 my-plugin/
@@ -293,7 +293,7 @@ AI 社交动态插件，使用 Supabase 作为后端存储，附带 `supabase_sc
 ## 📦 项目结构
 
 ```
-橘瓣/
+Emyth/
 ├── app/              # 主应用模块
 │   ├── data/         # 数据层
 │   │   ├── ai/       #   AI 对话与工具
@@ -341,14 +341,15 @@ AI 社交动态插件，使用 Supabase 作为后端存储，附带 `supabase_sc
 
 ## 💖 致谢
 
-- **[RikkaHub](https://github.com/rikkahub/rikkahub)** — 橘瓣的原版基础，一个优秀的 Android AI 聊天客户端
-- 所有为橘瓣开发插件的社区成员
+- **[RikkaHub](https://github.com/rikkahub/rikkahub)** — 最上游的原版基础，一个优秀的 Android AI 聊天客户端，原作者 RE
+- **[橘瓣 OrangeChat](https://github.com/sue1231513/orangechat)** — Emyth 的直接上游，本仓库在其基础上二改而来
+- 所有为橘瓣 / Emyth 开发插件的社区成员
 
 ---
 
 ## 📄 许可证
 
-本项目是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的派生作品，遵循与上游一致的 **用户分段双重许可 (Segmented Dual Licensing)** 模式：
+本项目是 [橘瓣 OrangeChat](https://github.com/sue1231513/orangechat) 的派生作品（橘瓣本身派生自 [RikkaHub](https://github.com/rikkahub/rikkahub)），遵循与上游一致的 **用户分段双重许可 (Segmented Dual Licensing)** 模式：
 
 - **非商业 / 个人 / 教育 / 研究**，或 **用户总数不超过 10 人** 的组织 —— 遵循 [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html)（含源代码公开义务）；
 - 商业用途、用户超过 10 人，或希望免除 AGPL v3 义务 —— 需购买商业许可证（联系原作者 `re_dev@qq.com`）。
@@ -359,6 +360,6 @@ AI 社交动态插件，使用 Supabase 作为后端存储，附带 `supabase_sc
 
 <div align="center">
 
-**🍊 橘瓣 OrangeChat · 让 AI 不止活在对话框里**
+**Emyth · 让 AI 不止活在对话框里**
 
 </div>
