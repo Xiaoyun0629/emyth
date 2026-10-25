@@ -51,7 +51,7 @@ import dev.emyth.app.data.model.AssistantAffectScope
 import dev.emyth.app.data.model.replaceRegexes
 import dev.emyth.app.ui.components.richtext.MarkdownBlock
 import dev.emyth.app.ui.components.ui.ChainOfThoughtScope
-import dev.emyth.app.ui.components.ui.icons.OrangePetalIcon
+import dev.emyth.app.ui.components.ui.icons.MoonIcon
 import dev.emyth.app.ui.context.LocalDisplaySettings
 import dev.emyth.app.ui.modifier.shimmer
 import dev.emyth.app.utils.extractThinkingTitle
@@ -204,7 +204,7 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
         onExpandedChange = { state.onExpandedChange(it, loading) },
         icon = {
             Icon(
-                imageVector = OrangePetalIcon,
+                imageVector = MoonIcon,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.secondary,
