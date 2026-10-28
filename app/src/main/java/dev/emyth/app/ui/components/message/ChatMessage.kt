@@ -1160,6 +1160,8 @@ private const val TRANSLUCENT_BUBBLE_BASE_ALPHA = 0.72f
 private const val TRANSLUCENT_BUBBLE_BORDER_ALPHA = 0.18f
 private const val GLASS_BUBBLE_BORDER_ALPHA = 0.24f
 
+@Composable
+@Suppress("UnusedCrossTarget")
 internal fun AudioPlayerBubble(url: String) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }

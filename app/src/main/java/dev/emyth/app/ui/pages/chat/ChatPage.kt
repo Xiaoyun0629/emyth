@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.isFinite
 import coil3.BitmapImage
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.emyth.app.ui.components.message.LiveBubbleBlurContext
