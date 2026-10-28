@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isFinite
 import coil3.BitmapImage
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
@@ -113,7 +114,6 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.Uuid
 
-@Composable
 private suspend fun decodeChatBackgroundBitmap(
     context: Context,
     model: String,
@@ -168,6 +168,7 @@ private suspend fun loadChatBackgroundViaCoil(context: Context, model: String): 
     return (result.image as? BitmapImage)?.bitmap
 }
 
+@Composable
 fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, autoStartVoice: Boolean = false) {
     val vm: ChatVM = koinViewModel(
         parameters = {
