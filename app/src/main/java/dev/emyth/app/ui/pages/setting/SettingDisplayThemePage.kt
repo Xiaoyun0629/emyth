@@ -21,11 +21,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
-import dev.emyth.app.data.datastore.DisplayMaterialMode
-import androidx.compose.material3.Slider
-import kotlin.math.roundToInt
-import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Alignment
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -159,90 +154,6 @@ fun SettingDisplayThemePage(vm: SettingVM = koinViewModel()) {
                         },
                         colors = CustomColors.listItemColors,
                     )
-                    // ===== 玻璃材质 =====
-                    ListItem(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(4.dp))
-                            .clickable {
-                                updateDisplaySetting(
-                                    displaySetting.copy(
-                                        materialMode = when (displaySetting.materialMode) {
-                                            DisplayMaterialMode.FOLLOW_THEME -> DisplayMaterialMode.FLAT
-                                            DisplayMaterialMode.FLAT -> DisplayMaterialMode.TRANSLUCENT
-                                            DisplayMaterialMode.TRANSLUCENT -> DisplayMaterialMode.GLASS
-                                            DisplayMaterialMode.GLASS -> DisplayMaterialMode.FOLLOW_THEME
-                                        }
-                                    )
-                                )
-                            },
-                        headlineContent = { Text("界面材质") },
-                        supportingContent = {
-                            Text(
-                                when (displaySetting.materialMode) {
-                                    DisplayMaterialMode.FOLLOW_THEME -> "跟随主题"
-                                    DisplayMaterialMode.FLAT -> "纯色"
-                                    DisplayMaterialMode.TRANSLUCENT -> "磨砂玻璃"
-                                    DisplayMaterialMode.GLASS -> "液态玻璃"
-                                }
-                            )
-                        },
-                        colors = CustomColors.listItemColors,
-                    )
-                    ListItem(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(4.dp)),
-                        headlineContent = { Text("界面实时渲染") },
-                        supportingContent = { Text("为玻璃界面启用实时背景渲染") },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.interfaceRealtimeRendering,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(interfaceRealtimeRendering = it))
-                                },
-                            )
-                        },
-                        colors = CustomColors.listItemColors,
-                    )
-                    if (displaySetting.interfaceRealtimeRendering) {
-                        ListItem(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(4.dp)),
-                            headlineContent = { Text("聊天气泡实时模糊") },
-                            supportingContent = { Text("为聊天气泡实时渲染背景模糊") },
-                            trailingContent = {
-                                Switch(
-                                    checked = displaySetting.chatBubbleRealtimeBlur,
-                                    onCheckedChange = {
-                                        updateDisplaySetting(displaySetting.copy(chatBubbleRealtimeBlur = it))
-                                    },
-                                )
-                            },
-                            colors = CustomColors.listItemColors,
-                        )
-                        ListItem(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(4.dp)),
-                            headlineContent = { Text("模糊强度") },
-                            supportingContent = {
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Slider(
-                                        value = displaySetting.interfaceBlurRadius.coerceIn(3f, 20f),
-                                        onValueChange = {
-                                            updateDisplaySetting(displaySetting.copy(interfaceBlurRadius = it))
-                                        },
-                                        valueRange = 3f..20f,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Text("${displaySetting.interfaceBlurRadius.coerceIn(3f, 20f).roundToInt()} dp")
-                                }
-                            },
-                            colors = CustomColors.listItemColors,
-                        )
-                    }
                 }
             }
         }

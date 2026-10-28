@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
-import dev.emyth.app.data.datastore.DisplayMaterialMode
 import dev.emyth.app.ui.components.ui.toComposeColor
 import dev.emyth.app.ui.hooks.rememberAmoledDarkMode
 import dev.emyth.app.ui.hooks.rememberColorMode
@@ -38,7 +37,6 @@ private val ExtendDarkColors = darkExtendColors()
 val LocalExtendColors = compositionLocalOf { ExtendLightColors }
 
 val LocalDarkMode = compositionLocalOf { false }
-val LocalMaterialMode = compositionLocalOf { DisplayMaterialMode.FLAT }
 
 private val AMOLED_DARK_BACKGROUND = Color(0xFF000000)
 
@@ -135,13 +133,6 @@ fun RikkahubTheme(
         scheme
     }
 
-    val resolvedMaterialMode = when (settings.displaySetting.materialMode) {
-        DisplayMaterialMode.FOLLOW_THEME -> {
-            if (settings.themeId == "liquid_glass") DisplayMaterialMode.GLASS else DisplayMaterialMode.FLAT
-        }
-        else -> settings.displaySetting.materialMode
-    }
-
     // 更新状态栏图标颜色
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -156,7 +147,6 @@ fun RikkahubTheme(
 
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
-        LocalMaterialMode provides resolvedMaterialMode,
         LocalExtendColors provides extendColors,
         LocalOverscrollFactory provides null
     ) {
