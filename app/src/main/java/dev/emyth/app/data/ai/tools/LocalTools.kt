@@ -136,7 +136,7 @@ sealed class LocalToolOption {
      * 直接配置进Emyth(写配置 + 连接), 无需用户手动添加.
      */
     @Serializable
-    @SerialName("configure")
+    @SerialName("configure_mcp")
     data object Configure : LocalToolOption()
 }
  
