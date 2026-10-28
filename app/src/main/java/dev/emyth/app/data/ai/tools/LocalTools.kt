@@ -136,8 +136,8 @@ sealed class LocalToolOption {
      * 直接配置进Emyth(写配置 + 连接), 无需用户手动添加.
      */
     @Serializable
-    @SerialName("configure_mcp")
-    data object ConfigureMcp : LocalToolOption()
+    @SerialName("configure")
+    data object Configure : LocalToolOption()
 }
  
 class LocalTools(
@@ -606,8 +606,8 @@ class LocalTools(
     /**
      * 配置Emyth里的 MCP 服务器（帮用户直接添加好，无需手动操作）。
      */
-    private fun createConfigureMcpTool() = Tool(
-        name = "configure_mcp",
+    private fun createConfigureTool() = Tool(
+        name = "configure",
         needsApproval = true,
         description = "配置Emyth里的 MCP 服务器：action=add 添加(name/url/type/token)，action=remove 删除(name)，action=list 列出已配置的 MCP。url 形如 http://120.76.178.0:8877/mcp。type 默认 streamable_http，可选 sse。",
         parameters = {
@@ -775,8 +775,8 @@ class LocalTools(
             tools.add(dev.emyth.app.data.ai.tools.local.globalActionTool(invocationContext))
             tools.add(dev.emyth.app.data.ai.tools.local.takeScreenshotTool(context))
         }
-        if (options.contains(LocalToolOption.ConfigureMcp)) {
-            tools.add(createConfigureMcpTool())
+        if (options.contains(LocalToolOption.Configure)) {
+            tools.add(createConfigureTool())
             tools.add(createDeleteAssistantTool())
         }
         if (options.contains(LocalToolOption.Ssh)) {
