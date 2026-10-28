@@ -7,6 +7,28 @@
 package dev.emyth.app.ui.pages.chat
 
 import android.net.Uri
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.os.Build
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import coil3.BitmapImage
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import dev.emyth.app.ui.components.message.LiveBubbleBlurContext
+import dev.emyth.app.ui.components.message.LocalLiveBubbleBlur
+import dev.emyth.app.data.datastore.DisplayMaterialMode
+import dev.emyth.app.ui.theme.LocalMaterialMode
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +55,8 @@ import androidx.compose.material3.adaptive.currentWindowDpSize
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +114,60 @@ import org.koin.core.parameter.parametersOf
 import kotlin.uuid.Uuid
 
 @Composable
+private suspend fun decodeChatBackgroundBitmap(
+    context: Context,
+    model: String,
+): ImageBitmap? = withContext(Dispatchers.IO) {
+    val uri = runCatching { Uri.parse(model) }.getOrNull()
+    val bitmap = when {
+        model.startsWith("/") -> {
+            BitmapFactory.decodeFile(model)
+        }
+
+        uri?.scheme == ContentResolver.SCHEME_CONTENT ||
+            uri?.scheme == ContentResolver.SCHEME_ANDROID_RESOURCE -> {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input)
+            }
+        }
+
+        uri?.scheme == ContentResolver.SCHEME_FILE -> {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input)
+            } ?: uri.path?.let(BitmapFactory::decodeFile)
+        }
+
+        uri?.scheme == "http" || uri?.scheme == "https" -> {
+            loadChatBackgroundViaCoil(context, model)
+        }
+
+        else -> {
+            BitmapFactory.decodeFile(model)
+                ?: uri?.let {
+                    runCatching {
+                        context.contentResolver.openInputStream(it)?.use(BitmapFactory::decodeStream)
+                    }.getOrNull()
+                }
+        }
+    }
+    bitmap?.asImageBitmap()
+}
+
+/**
+ * 使用项目现有 Coil 3 ImageLoader 加载同一 model（与 Coil 显示背景使用同一套 fetcher/缓存）。
+ * 调用方已处于 Dispatchers.IO，Coil 内部网络/解码不会阻塞主线程。
+ */
+private suspend fun loadChatBackgroundViaCoil(context: Context, model: String): Bitmap? {
+    val loader = SingletonImageLoader.get(context)
+    val request = ImageRequest.Builder(context)
+        .data(model)
+        // 硬件位图无法被 asImageBitmap/RenderEffect 采样，关闭硬件加速以保证可读
+        .allowHardware(false)
+        .build()
+    val result = loader.execute(request)
+    return (result.image as? BitmapImage)?.bitmap
+}
+
 fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, autoStartVoice: Boolean = false) {
     val vm: ChatVM = koinViewModel(
         parameters = {
@@ -269,13 +347,65 @@ private fun ChatPageContent(
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
 
+    // ===== 普通聊天气泡实时背景模糊 =====
+    val actualMaterialMode = LocalMaterialMode.current
+    val enableLiveBubbleBlur =
+        setting.displaySetting.interfaceRealtimeRendering &&
+            setting.displaySetting.chatBubbleRealtimeBlur &&
+            actualMaterialMode == DisplayMaterialMode.GLASS &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val chatBackgroundPainter = rememberChatBackgroundPainter(setting)
+    val chatBackgroundVisuals = rememberChatBackgroundVisuals(setting)
+    val bubbleBlurBackgroundModel = setting.getCurrentAssistant().background
+    val bubbleBlurContext = LocalContext.current.applicationContext
+    var bubbleBlurBackgroundBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(bubbleBlurBackgroundModel) {
+        if (bubbleBlurBackgroundModel != null) {
+            bubbleBlurBackgroundBitmap = runCatching {
+                decodeChatBackgroundBitmap(bubbleBlurContext, bubbleBlurBackgroundModel)
+            }.getOrNull()
+        } else {
+            bubbleBlurBackgroundBitmap = null
+        }
+    }
+    var bubbleBlurBackgroundOrigin by remember { mutableStateOf(Offset.Unspecified) }
+    var bubbleBlurBackgroundSize by remember { mutableStateOf(Size.Unspecified) }
+    val bubbleBlurRadiusPx = with(LocalDensity.current) { 5.dp.toPx() }
+
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        AssistantBackground(setting = setting)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    val pos = coordinates.positionInWindow()
+                    if (pos.isFinite && coordinates.size.width > 0 && coordinates.size.height > 0) {
+                        bubbleBlurBackgroundOrigin = pos
+                        bubbleBlurBackgroundSize = Size(
+                            coordinates.size.width.toFloat(),
+                            coordinates.size.height.toFloat(),
+                        )
+                    }
+                }
+        ) {
+            CompositionLocalProvider(
+                LocalLiveBubbleBlur provides LiveBubbleBlurContext(
+                    imageBitmap = if (enableLiveBubbleBlur) bubbleBlurBackgroundBitmap else null,
+                    backgroundOriginInWindow = bubbleBlurBackgroundOrigin,
+                    backgroundSizePx = bubbleBlurBackgroundSize,
+                    baseColor = chatBackgroundVisuals.baseColor,
+                    imageAlpha = chatBackgroundVisuals.imageAlpha,
+                    gradientTopAlpha = chatBackgroundVisuals.gradientTopAlpha,
+                    gradientBottomAlpha = chatBackgroundVisuals.gradientBottomAlpha,
+                    enabled = enableLiveBubbleBlur,
+                    radiusPx = bubbleBlurRadiusPx,
+                )
+            ) {
+                AssistantBackground(setting = setting, backgroundPainter = chatBackgroundPainter)
         Scaffold(
             topBar = {
                 TopBar(
@@ -503,6 +633,8 @@ private fun ChatPageContent(
             )
         }
     }
+            }
+        }
 }
 
 @Composable

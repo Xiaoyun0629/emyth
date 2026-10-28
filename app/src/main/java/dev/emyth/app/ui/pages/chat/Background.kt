@@ -13,32 +13,73 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import coil3.compose.rememberAsyncImagePainter
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.ui.components.ui.toComposeColor
 import dev.emyth.app.data.datastore.getCurrentAssistant
 
+/** 聊天图片背景的共享视觉参数（气泡实时模糊与页面背景共用，保证逐像素一致） */
+data class ChatBackgroundVisuals(
+    val baseColor: Color,
+    val imageAlpha: Float,
+    val gradientTopAlpha: Float = 0.2f,
+    val gradientBottomAlpha: Float = 0.5f,
+) {
+    companion object {
+        val Unspecified = ChatBackgroundVisuals(baseColor = Color.Unspecified, imageAlpha = 1f)
+    }
+}
+
+/** 仅当聊天背景为图片时返回可共享的 Painter（Coil 缓存，不重复加载）；纯色/无背景返回 null */
 @Composable
-fun AssistantBackground(setting: Settings) {
+fun rememberChatBackgroundPainter(setting: Settings): Painter? {
     val assistant = setting.getCurrentAssistant()
+    return if (assistant.background != null) {
+        rememberAsyncImagePainter(model = assistant.background)
+    } else {
+        null
+    }
+}
+
+/** 计算与 AssistantBackground 完全一致的背景视觉参数（主题实时值） */
+@Composable
+fun rememberChatBackgroundVisuals(setting: Settings): ChatBackgroundVisuals {
+    val assistant = setting.getCurrentAssistant()
+    val baseColor = setting.displaySetting.chatBackgroundColor?.let { it.toComposeColor() }
+        ?: MaterialTheme.colorScheme.background
+    return ChatBackgroundVisuals(
+        baseColor = baseColor,
+        imageAlpha = assistant.backgroundOpacity.coerceIn(0f, 1f),
+    )
+}
+
+@Composable
+fun AssistantBackground(
+    setting: Settings,
+    backgroundPainter: Painter? = null,
+) {
+    val assistant = setting.getCurrentAssistant()
+    val sharedPainter = backgroundPainter ?: rememberChatBackgroundPainter(setting)
+    val visuals = rememberChatBackgroundVisuals(setting)
     val chatBackgroundColor = setting.displaySetting.chatBackgroundColor?.let { it.toComposeColor() }
 
     when {
-        assistant.background != null -> {
-            // 用户手动为助手设置的背景图，优先级最高
-            val backgroundColor = chatBackgroundColor ?: MaterialTheme.colorScheme.background
-            val backgroundOpacity = assistant.backgroundOpacity.coerceIn(0f, 1f)
+        assistant.background != null && sharedPainter != null -> {
             Box {
-                AsyncImage(
-                    model = assistant.background,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .alpha(backgroundOpacity)
+                        .alpha(visuals.imageAlpha)
+                        .paint(
+                            painter = sharedPainter,
+                            contentScale = ContentScale.Crop,
+                        )
                 )
                 Box(
                     modifier = Modifier
@@ -46,8 +87,8 @@ fun AssistantBackground(setting: Settings) {
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    backgroundColor.copy(alpha = 0.2f),
-                                    backgroundColor.copy(alpha = 0.5f)
+                                    visuals.baseColor.copy(alpha = visuals.gradientTopAlpha),
+                                    visuals.baseColor.copy(alpha = visuals.gradientBottomAlpha)
                                 )
                             )
                         )
@@ -56,7 +97,6 @@ fun AssistantBackground(setting: Settings) {
         }
 
         chatBackgroundColor != null -> {
-            // 用户设置了自定义纯色背景
             Box(
                 modifier = Modifier
                     .fillMaxSize()

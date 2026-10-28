@@ -683,6 +683,17 @@ enum class ChatFontFamily {
     CUSTOM,
 }
 
+enum class DisplayMaterialMode {
+    @SerialName("follow_theme")
+    FOLLOW_THEME,
+    @SerialName("flat")
+    FLAT,
+    @SerialName("translucent")
+    TRANSLUCENT,
+    @SerialName("glass")
+    GLASS,
+}
+
 @Serializable
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
@@ -715,7 +726,14 @@ data class DisplaySetting(
     val enableAutoScroll: Boolean = true,
     val enableLatexRendering: Boolean = true,
     val enableBlurEffect: Boolean = false,
+    // 界面实时渲染开关（玻璃界面总开关，默认关）
+    val interfaceRealtimeRendering: Boolean = false,
+    // 聊天气泡实时背景模糊（固定 5dp，默认关）
+    val chatBubbleRealtimeBlur: Boolean = false,
+    // 抽屉实时模糊强度（dp，3..20）
+    val interfaceBlurRadius: Float = 8f,
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
+    val materialMode: DisplayMaterialMode = DisplayMaterialMode.FOLLOW_THEME,
     val enableVolumeKeyScroll: Boolean = false,
     val volumeKeyScrollRatio: Float = 1.0f,
     val chatBubbleTransparency: Float = 0f,
@@ -733,6 +751,8 @@ data class DisplaySetting(
     val aiAvatarFrameOffsetX: Float = 0f,
     val aiAvatarFrameOffsetY: Float = 0f,
     val aiAvatarFrameScale: Float = 1f,
+    // 聊天气泡头像大小（dp），默认 36，设置里可调
+    val avatarSize: Float = 36f,
     // 侧边栏背景
     val drawerBackgroundPath: String = "",
     // 侧边栏元素透明度
