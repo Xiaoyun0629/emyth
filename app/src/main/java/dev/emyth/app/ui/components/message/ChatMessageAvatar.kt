@@ -106,7 +106,7 @@ fun ChatMessageUserAvatar(
             Box(contentAlignment = Alignment.Center) {
                 UIAvatar(
                     name = nickname,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(settings.displaySetting.avatarSize.dp),
                     value = avatar,
                     loading = false,
                 )
@@ -115,7 +115,7 @@ fun ChatMessageUserAvatar(
                     offsetX = settings.displaySetting.userAvatarFrameOffsetX,
                     offsetY = settings.displaySetting.userAvatarFrameOffsetY,
                     scale = settings.displaySetting.userAvatarFrameScale,
-                    baseSize = 36f,
+                    baseSize = settings.displaySetting.avatarSize,
                 )
             }
         }
@@ -144,7 +144,7 @@ fun ChatMessageAssistantAvatar(
                     Box(contentAlignment = Alignment.Center) {
                         UIAvatar(
                             name = assistant.name,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(settings.displaySetting.avatarSize.dp),
                             value = assistant.avatar,
                             loading = loading,
                         )
@@ -153,7 +153,7 @@ fun ChatMessageAssistantAvatar(
                             offsetX = settings.displaySetting.aiAvatarFrameOffsetX,
                             offsetY = settings.displaySetting.aiAvatarFrameOffsetY,
                             scale = settings.displaySetting.aiAvatarFrameScale,
-                            baseSize = 32f,
+                            baseSize = settings.displaySetting.avatarSize,
                         )
                     }
                 }
@@ -181,7 +181,7 @@ fun ChatMessageAssistantAvatar(
                     Box(contentAlignment = Alignment.Center) {
                         AutoAIIcon(
                             name = model.modelId,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(settings.displaySetting.avatarSize.dp),
                             loading = loading
                         )
                         AvatarFrameOverlay(
@@ -189,7 +189,7 @@ fun ChatMessageAssistantAvatar(
                             offsetX = settings.displaySetting.aiAvatarFrameOffsetX,
                             offsetY = settings.displaySetting.aiAvatarFrameOffsetY,
                             scale = settings.displaySetting.aiAvatarFrameScale,
-                            baseSize = 32f,
+                            baseSize = settings.displaySetting.avatarSize,
                         )
                     }
                 }

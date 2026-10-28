@@ -258,12 +258,12 @@ private fun AssistantLocalToolContent(
                 supportingContent = { Text("让 AI 帮你把 MCP 服务器直接配置进Emyth，无需手动添加") },
                 trailingContent = {
                     Switch(
-                        checked = assistant.localTools.contains(LocalToolOption.ConfigureMcp),
+                        checked = assistant.localTools.contains(LocalToolOption.Configure),
                         onCheckedChange = {
                             val newLocalTools = if (it) {
-                                assistant.localTools + LocalToolOption.ConfigureMcp
+                                assistant.localTools + LocalToolOption.Configure
                             } else {
-                                assistant.localTools - LocalToolOption.ConfigureMcp
+                                assistant.localTools - LocalToolOption.Configure
                             }
                             onUpdate(assistant.copy(localTools = newLocalTools))
                         }

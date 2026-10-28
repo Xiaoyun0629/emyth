@@ -311,6 +311,21 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text("头像挂件") },
                 ) {
+                    // ===== 头像大小 =====
+                    item(
+                        headlineContent = { Text("头像大小") },
+                        supportingContent = {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Slider(
+                                    value = displaySetting.avatarSize,
+                                    onValueChange = { updateDisplaySetting(displaySetting.copy(avatarSize = it)) },
+                                    valueRange = 24f..64f,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text("${displaySetting.avatarSize.toInt()} dp")
+                            }
+                        },
+                    )
                     // ===== 用户头像挂件 =====
                     item(
                         headlineContent = { Text("用户头像挂件") },
