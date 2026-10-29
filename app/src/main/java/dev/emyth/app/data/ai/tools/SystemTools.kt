@@ -520,7 +520,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.AppLock in enabledTools) tools.add(appLockTool)
         if (SystemToolOption.LockChat in enabledTools) tools.add(lockChatTool)
         if (SystemToolOption.LockChat in enabledTools) tools.add(unlockChatTool)
-        if (SystemToolOption.PullBack in enabledTools) {
+        if (settings.systemToolsSetting.deviceEventTrackingEnabled) {
             tools.add(pullBackTool)
             tools.add(unpullBackTool)
             tools.add(deviceEventsTool)
