@@ -327,7 +327,8 @@ fun SettingProactiveMessagePage(vm: SettingVM = koinInject()) {
                 }
             }
             // 主动打语音
-            CardGroup {
+            item {
+                CardGroup {
                 item(
                     headlineContent = { Text("主动打语音") },
                     supportingContent = {
@@ -374,6 +375,7 @@ fun SettingProactiveMessagePage(vm: SettingVM = koinInject()) {
                         },
                     )
                 }
+            }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 item {

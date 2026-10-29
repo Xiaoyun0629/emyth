@@ -541,7 +541,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 // 同时把数据库里的完整对话同步到 session，防止流式更新时 conv 是空状态导致覆盖历史。
                 // 主动打语音：开启时，若用户超过阈值没来找我，触发来电（不发消息）
                 if (proactiveSetting.voiceCallEnabled && !isFromDeviceEvent && !isScheduledWake) {
-                    val lastMsgTimeMs = conversation?.currentMessages?.lastOrNull()?.createdAt?.toEpochMilliseconds() ?: 0L
+                    val lastMsgTimeMs = proactiveMessageService.getLastMessageTimeMs()
                     val thresholdMs = proactiveSetting.voiceCallIdleThresholdMinutes.coerceAtLeast(1) * 60_000L
                     if (lastMsgTimeMs == 0L || System.currentTimeMillis() - lastMsgTimeMs >= thresholdMs) {
                         Log.d(TAG, "主动打语音：空闲超过阈值，触发来电")
