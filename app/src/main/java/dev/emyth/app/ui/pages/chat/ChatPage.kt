@@ -613,6 +613,12 @@ private fun ChatPageContent(
                 onClearTranslation = { message ->
                     vm.clearTranslationField(message.id)
                 },
+                onClearThinking = { message ->
+                    vm.clearMessageThinking(message)
+                },
+                onClearToolRecords = { message ->
+                    vm.clearMessageToolRecords(message)
+                },
                 onJumpToMessage = { index ->
                     previewMode = false
                     scope.launch {

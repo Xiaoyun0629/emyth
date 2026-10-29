@@ -54,6 +54,7 @@ import me.rerere.hugeicons.stroke.FavouriteCircle
 import me.rerere.hugeicons.stroke.GitFork
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Refresh03
+import me.rerere.hugeicons.stroke.Zap
 import me.rerere.hugeicons.stroke.Share04
 import me.rerere.hugeicons.stroke.StopCircle
 import me.rerere.hugeicons.stroke.TextSelection
@@ -241,6 +242,8 @@ fun ChatMessageActionsSheet(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onWebViewPreview: () -> Unit,
+    onClearThinking: (() -> Unit)? = null,
+    onClearToolRecords: (() -> Unit)? = null,
     onDismissRequest: () -> Unit
 ) {
     ModalBottomSheet(
@@ -419,6 +422,64 @@ fun ChatMessageActionsSheet(
                                 if (isFavorite) R.string.chat_message_remove_favorite
                                 else R.string.chat_message_add_favorite
                             ),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                }
+            }
+
+            // 删除思考链
+            if (onClearThinking != null && message.parts.any { it is UIMessagePart.Reasoning }) {
+                Card(
+                    onClick = {
+                        onDismissRequest()
+                        onClearThinking()
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.Zap,
+                            contentDescription = null,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                        Text(
+                            text = "删除思考链",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                }
+            }
+
+            // 删除工具记录
+            if (onClearToolRecords != null && message.parts.any { it is UIMessagePart.Tool || it is UIMessagePart.ToolCall || it is UIMessagePart.ToolResult }) {
+                Card(
+                    onClick = {
+                        onDismissRequest()
+                        onClearToolRecords()
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.Refresh03,
+                            contentDescription = null,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                        Text(
+                            text = "删除工具记录",
                             style = MaterialTheme.typography.titleMedium,
                         )
                     }

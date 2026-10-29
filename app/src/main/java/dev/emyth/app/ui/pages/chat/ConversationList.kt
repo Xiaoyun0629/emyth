@@ -93,9 +93,7 @@ fun ColumnScope.ConversationList(
     onRegenerateTitle: (Conversation) -> Unit = {},
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
-    onMoveToFolder: (Conversation) -> Unit = {},
-    onClearThinking: (Conversation) -> Unit = {},
-    onClearToolRecords: (Conversation) -> Unit = {}
+    onMoveToFolder: (Conversation) -> Unit = {}
 ) {
     var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
 
@@ -174,8 +172,6 @@ fun ColumnScope.ConversationList(
                         onPin = onPin,
                         onMoveToAssistant = onMoveToAssistant,
                         onMoveToFolder = onMoveToFolder,
-                        onClearThinking = onClearThinking,
-                        onClearToolRecords = onClearToolRecords,
                         drawerItemAlpha = drawerItemAlpha,
                         modifier = Modifier.animateItem()
                     )
@@ -251,8 +247,6 @@ private fun ConversationItem(
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
-    onClearThinking: (Conversation) -> Unit = {},
-    onClearToolRecords: (Conversation) -> Unit = {},
     onClick: (Conversation) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -368,32 +362,6 @@ private fun ConversationItem(
                     },
                     leadingIcon = {
                         Icon(HugeIcons.Folder01, null)
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = {
-                        Text("删除思考链")
-                    },
-                    onClick = {
-                        onClearThinking(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.Zap, null)
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = {
-                        Text("删除工具记录")
-                    },
-                    onClick = {
-                        onClearToolRecords(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.Refresh03, null)
                     }
                 )
 
