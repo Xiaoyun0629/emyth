@@ -807,7 +807,7 @@ class LocalTools(
             if (prompt.isBlank()) {
                 return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"prompt 不能为空"}"""))
             }
-            val num = params["numOfImages"]?.jsonPrimitive?.intOrNull ?: 1
+            val num = params["numOfImages"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1
             val aspect = when (params["aspectRatio"]?.jsonPrimitive?.contentOrNull?.lowercase()) {
                 "landscape" -> ImageAspectRatio.LANDSCAPE
                 "portrait" -> ImageAspectRatio.PORTRAIT
