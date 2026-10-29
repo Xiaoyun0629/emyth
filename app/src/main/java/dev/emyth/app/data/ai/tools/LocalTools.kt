@@ -6,6 +6,13 @@
 
 package dev.emyth.app.data.ai.tools
  
+import me.rerere.ai.provider.ImageGenerationParams
+import me.rerere.ai.provider.ProviderManager
+import me.rerere.ai.ui.ImageAspectRatio
+import dev.emyth.app.data.datastore.findModelById
+import dev.emyth.app.data.datastore.findProvider
+import dev.emyth.app.data.files.FilesManager
+import kotlinx.coroutines.flow.first
 import android.content.Context
 import com.whl.quickjs.wrapper.QuickJSContext
 import com.whl.quickjs.wrapper.QuickJSObject
@@ -138,6 +145,13 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("configure_mcp")
     data object Configure : LocalToolOption()
+
+    /**
+     * 生图. 开启后注册 generate_image 工具, AI 可直接调用生图模型生成图片.
+     */
+    @Serializable
+    @SerialName("generate_image")
+    data object GenerateImage : LocalToolOption()
 }
  
 class LocalTools(
@@ -609,13 +623,17 @@ class LocalTools(
     private fun createConfigureTool() = Tool(
         name = "configure",
         needsApproval = true,
-        description = "配置Emyth里的 MCP 服务器：action=add 添加(name/url/type/token)，action=remove 删除(name)，action=list 列出已配置的 MCP。url 形如 http://120.76.178.0:8877/mcp。type 默认 streamable_http，可选 sse。",
+        description = "全局配置工具。target=mcp 配置MCP服务器(action=add/remove/list，url 形如 http://120.76.178.0:8877/mcp，type 默认 streamable_http)；target=switch 读写设置开关(action=list 列出可选开关，action=set 设置开关，key=字段名 value=true/false)。",
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
+                    put("target", buildJsonObject {
+                        put("type", "string")
+                        put("description", "配置目标：mcp(默认) 或 switch")
+                    })
                     put("action", buildJsonObject {
                         put("type", "string")
-                        put("description", "add / remove / list")
+                        put("description", "add / remove / list / set")
                     })
                     put("name", buildJsonObject {
                         put("type", "string")
@@ -633,12 +651,85 @@ class LocalTools(
                         put("type", "string")
                         put("description", "可选，鉴权 token（自动加到 Authorization: Bearer）")
                     })
+                    put("key", buildJsonObject {
+                        put("type", "string")
+                        put("description", "switch 目标时的开关字段名（用 list 查看可选值）")
+                    })
+                    put("value", buildJsonObject {
+                        put("type", "string")
+                        put("description", "switch 目标时的开关值(true/false)")
+                    })
                 },
                 required = listOf("action")
             )
         },
         execute = { args ->
             val params = args.jsonObject
+            val target = params["target"]?.jsonPrimitive?.contentOrNull ?: "mcp"
+            if (target == "switch") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val d = store.settingsFlow.value.displaySetting
+                        val info = listOf(
+                            "模糊效果 enableBlurEffect = ${d.enableBlurEffect}",
+                            "界面实时渲染 interfaceRealtimeRendering = ${d.interfaceRealtimeRendering}",
+                            "聊天气泡实时模糊 chatBubbleRealtimeBlur = ${d.chatBubbleRealtimeBlur}",
+                            "用户头像 showUserAvatar = ${d.showUserAvatar}",
+                            "模型图标 showModelIcon = ${d.showModelIcon}",
+                            "模型名 showModelName = ${d.showModelName}",
+                            "名字下日期 showDateBelowName = ${d.showDateBelowName}",
+                            "token用量 showTokenUsage = ${d.showTokenUsage}",
+                            "思考内容 showThinkingContent = ${d.showThinkingContent}",
+                            "自动收起思考 autoCloseThinking = ${d.autoCloseThinking}",
+                            "消息跳转 showMessageJumper = ${d.showMessageJumper}",
+                            "自动滚动 enableAutoScroll = ${d.enableAutoScroll}",
+                            "LaTeX渲染 enableLatexRendering = ${d.enableLatexRendering}",
+                            "代码自动换行 codeBlockAutoWrap = ${d.codeBlockAutoWrap}",
+                            "代码折叠 codeBlockAutoCollapse = ${d.codeBlockAutoCollapse}",
+                            "回车发送 sendOnEnter = ${d.sendOnEnter}",
+                            "TTS只读引用 ttsOnlyReadQuoted = ${d.ttsOnlyReadQuoted}",
+                            "生成后自动播TTS autoPlayTTSAfterGeneration = ${d.autoPlayTTSAfterGeneration}",
+                        ).joinToString("\n")
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "set" -> {
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val valueStr = params["value"]?.jsonPrimitive?.contentOrNull ?: "true"
+                        val bool = when (valueStr.lowercase()) {
+                            "true", "1", "on", "yes" -> true
+                            "false", "0", "off", "no" -> false
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"value 必须是 true/false"}"""))
+                        }
+                        val d = store.settingsFlow.value.displaySetting
+                        val nd = when (key) {
+                            "enableBlurEffect" -> d.copy(enableBlurEffect = bool)
+                            "interfaceRealtimeRendering" -> d.copy(interfaceRealtimeRendering = bool)
+                            "chatBubbleRealtimeBlur" -> d.copy(chatBubbleRealtimeBlur = bool)
+                            "showUserAvatar" -> d.copy(showUserAvatar = bool)
+                            "showModelIcon" -> d.copy(showModelIcon = bool)
+                            "showModelName" -> d.copy(showModelName = bool)
+                            "showDateBelowName" -> d.copy(showDateBelowName = bool)
+                            "showTokenUsage" -> d.copy(showTokenUsage = bool)
+                            "showThinkingContent" -> d.copy(showThinkingContent = bool)
+                            "autoCloseThinking" -> d.copy(autoCloseThinking = bool)
+                            "showMessageJumper" -> d.copy(showMessageJumper = bool)
+                            "enableAutoScroll" -> d.copy(enableAutoScroll = bool)
+                            "enableLatexRendering" -> d.copy(enableLatexRendering = bool)
+                            "codeBlockAutoWrap" -> d.copy(codeBlockAutoWrap = bool)
+                            "codeBlockAutoCollapse" -> d.copy(codeBlockAutoCollapse = bool)
+                            "sendOnEnter" -> d.copy(sendOnEnter = bool)
+                            "ttsOnlyReadQuoted" -> d.copy(ttsOnlyReadQuoted = bool)
+                            "autoPlayTTSAfterGeneration" -> d.copy(autoPlayTTSAfterGeneration = bool)
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知开关 $key，用 action=list 查看可选值"}"""))
+                        }
+                        store.update { st -> st.copy(displaySetting = nd) }
+                        listOf(UIMessagePart.Text("""{"success":true,"key":"$key","value":$bool}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("switch 的 action 支持 list / set"))
+                }
+            }
             val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
             val store = getKoin().get<SettingsStore>()
             val mcpManager = getKoin().get<McpManager>()
@@ -686,6 +777,74 @@ class LocalTools(
         }
     )
 
+
+    private fun createGenerateImageTool() = Tool(
+        name = "generate_image",
+        needsApproval = true,
+        description = "生图：调用生图模型生成图片。prompt=图片描述(英文效果更好)，numOfImages=数量(1-4)，aspectRatio=宽高比(square/landscape/portrait)。生成后图片保存到相册。",
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("prompt", buildJsonObject {
+                        put("type", "string")
+                        put("description", "图片描述")
+                    })
+                    put("numOfImages", buildJsonObject {
+                        put("type", "integer")
+                        put("description", "生成数量 1-4，默认 1")
+                    })
+                    put("aspectRatio", buildJsonObject {
+                        put("type", "string")
+                        put("description", "宽高比 square/landscape/portrait，默认 square")
+                    })
+                },
+                required = listOf("prompt")
+            )
+        },
+        execute = { args ->
+            val params = args.jsonObject
+            val prompt = params["prompt"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            if (prompt.isBlank()) {
+                return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"prompt 不能为空"}"""))
+            }
+            val num = params["numOfImages"]?.jsonPrimitive?.intOrNull ?: 1
+            val aspect = when (params["aspectRatio"]?.jsonPrimitive?.contentOrNull?.lowercase()) {
+                "landscape" -> ImageAspectRatio.LANDSCAPE
+                "portrait" -> ImageAspectRatio.PORTRAIT
+                else -> ImageAspectRatio.SQUARE
+            }
+            val store = getKoin().get<SettingsStore>()
+            val providerManager = getKoin().get<ProviderManager>()
+            val filesManager = getKoin().get<FilesManager>()
+            try {
+                val settings = store.settingsFlow.first()
+                val model = settings.findModelById(settings.imageGenerationModelId)
+                    ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未配置生图模型，请先在设置里选一个生图模型"}"""))
+                val provider = model.findProvider(settings.providers)
+                    ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到生图模型对应的供应商"}"""))
+                val providerSetting = settings.providers.find { it.id == provider.id }
+                    ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到供应商设置"}"""))
+                val genParams = ImageGenerationParams(
+                    model = model,
+                    prompt = prompt,
+                    numOfImages = num.coerceIn(1, 4),
+                    aspectRatio = aspect,
+                    customHeaders = model.customHeaders,
+                    customBody = model.customBodies,
+                )
+                val result = providerManager.getProviderByType(provider).generateImage(providerSetting, genParams)
+                val savedPaths = result.items.mapIndexed { index, item ->
+                    val imagesDir = filesManager.getImagesDir()
+                    val filename = "${System.currentTimeMillis()}_${model.displayName}_$index.png"
+                    val imageFile = java.io.File(imagesDir, filename)
+                    filesManager.createImageFileFromBase64(item.data, imageFile.absolutePath).absolutePath
+                }
+                listOf(UIMessagePart.Text("""{"success":true,"count":${savedPaths.size},"paths":[${savedPaths.joinToString(",") { "\"$it\"" }}]}"""))
+            } catch (e: Exception) {
+                listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
+            }
+        }
+    )
 
     private fun createDeleteAssistantTool() = Tool(
         name = "delete_assistant",
@@ -778,6 +937,7 @@ class LocalTools(
         if (options.contains(LocalToolOption.Configure)) {
             tools.add(createConfigureTool())
             tools.add(createDeleteAssistantTool())
+            tools.add(createGenerateImageTool())
         }
         if (options.contains(LocalToolOption.Ssh)) {
             tools.add(dev.emyth.app.data.ai.tools.local.sshExecTool(context))

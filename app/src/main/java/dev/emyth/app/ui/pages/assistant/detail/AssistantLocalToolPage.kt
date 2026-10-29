@@ -254,8 +254,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("系统配置（MCP）") },
-                supportingContent = { Text("让 AI 帮你把 MCP 服务器直接配置进Emyth，无需手动添加") },
+                headlineContent = { Text("全局配置") },
+                supportingContent = { Text("让 AI 帮你配置 MCP、设置开关等，无需手动操作") },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.Configure),
@@ -264,6 +264,23 @@ private fun AssistantLocalToolContent(
                                 assistant.localTools + LocalToolOption.Configure
                             } else {
                                 assistant.localTools - LocalToolOption.Configure
+                            }
+                            onUpdate(assistant.copy(localTools = newLocalTools))
+                        }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text("生图") },
+                supportingContent = { Text("让 AI 直接调用生图模型生成图片") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.GenerateImage),
+                        onCheckedChange = {
+                            val newLocalTools = if (it) {
+                                assistant.localTools + LocalToolOption.GenerateImage
+                            } else {
+                                assistant.localTools - LocalToolOption.GenerateImage
                             }
                             onUpdate(assistant.copy(localTools = newLocalTools))
                         }
