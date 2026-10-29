@@ -310,6 +310,12 @@ fun ChatDrawerContent(
                         navigateToChatPage(navController)
                     }
                 },
+                onClearThinking = {
+                    vm.clearThinking(it)
+                },
+                onClearToolRecords = {
+                    vm.clearToolRecords(it)
+                },
                 onPin = {
                     vm.updatePinnedStatus(it)
                 },

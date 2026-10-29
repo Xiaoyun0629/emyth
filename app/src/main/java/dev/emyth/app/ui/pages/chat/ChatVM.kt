@@ -319,6 +319,40 @@ class ChatVM(
         }
     }
 
+    /** 清空某个对话里所有消息的思考链（reasoning），省 token，保留正文和工具记录 */
+    fun clearThinking(conversation: Conversation) {
+        viewModelScope.launch {
+            val full = conversationRepo.getConversationById(conversation.id) ?: return@launch
+            val newMessages = full.currentMessages.map { msg ->
+                msg.copy(parts = msg.parts.filterNot { it is UIMessagePart.Reasoning })
+            }
+            val updated = full.updateCurrentMessages(newMessages)
+            if (conversation.id == _conversationId) {
+                chatService.saveConversation(_conversationId, updated)
+            } else {
+                conversationRepo.updateConversation(updated)
+            }
+        }
+    }
+
+    /** 清空某个对话里所有消息的工具调用记录（tool/tool_call/tool_result），省 token，保留正文和思考链 */
+    fun clearToolRecords(conversation: Conversation) {
+        viewModelScope.launch {
+            val full = conversationRepo.getConversationById(conversation.id) ?: return@launch
+            val newMessages = full.currentMessages.map { msg ->
+                msg.copy(parts = msg.parts.filterNot {
+                    it is UIMessagePart.Tool || it is UIMessagePart.ToolCall || it is UIMessagePart.ToolResult
+                })
+            }
+            val updated = full.updateCurrentMessages(newMessages)
+            if (conversation.id == _conversationId) {
+                chatService.saveConversation(_conversationId, updated)
+            } else {
+                conversationRepo.updateConversation(updated)
+            }
+        }
+    }
+
     fun toggleMessageFavorite(node: MessageNode) {
         viewModelScope.launch {
             val currentlyFavorited = favoriteRepository.isNodeFavorited(_conversationId, node.id)
