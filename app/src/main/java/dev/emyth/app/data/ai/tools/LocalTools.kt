@@ -839,7 +839,9 @@ class LocalTools(
                     val imageFile = java.io.File(imagesDir, filename)
                     filesManager.createImageFileFromBase64(item.data, imageFile.absolutePath).absolutePath
                 }
-                listOf(UIMessagePart.Text("""{"success":true,"count":${savedPaths.size},"paths":[${savedPaths.joinToString(",") { "\"$it\"" }}]}"""))
+                val textPart = UIMessagePart.Text("""{"success":true,"count":${savedPaths.size}}""")
+                val imageParts = savedPaths.map { UIMessagePart.Image(url = "file://$it") }
+                listOf(textPart) + imageParts
             } catch (e: Exception) {
                 listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
             }
