@@ -91,6 +91,10 @@ class RikkaAccessibilityService : AccessibilityService() {
             val pkg = event.packageName?.toString()
             if (!pkg.isNullOrBlank()) {
                 dev.emyth.app.workflow.trigger.AppForegroundDispatcher.onForegroundChange(pkg)
+                // 吃醋拉回：开启强制拉回时，切到别的 App 自动拽回 Emyth
+                if (pkg != packageName && dev.emyth.app.data.service.PullBackManager.isEnabled(this)) {
+                    dev.emyth.app.data.service.PullBackManager.pullBack(this)
+                }
             }
         }
     }

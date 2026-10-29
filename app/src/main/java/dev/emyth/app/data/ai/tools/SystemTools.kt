@@ -61,6 +61,7 @@ sealed class SystemToolOption {
     @Serializable @SerialName("task") data object Task : SystemToolOption()
     @Serializable @SerialName("wake") data object Wake : SystemToolOption()
     @Serializable @SerialName("fingerprint") data object Fingerprint : SystemToolOption()
+    @Serializable @SerialName("pull_back") data object PullBack : SystemToolOption()
 }
 
 class SystemTools(private val context: Context, private val settings: Settings) {
@@ -407,6 +408,30 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         )
     }
 
+    // 吃醋拉回：强制拉回 + 解除拉回
+    private val pullBackTool by lazy {
+        Tool(
+            name = "enable_pull_back",
+            needsApproval = true,
+            description = "开启强制拉回：调用后，用户切到任何别的 App 都会自动被拽回 Emyth，直到调用 disable_pull_back 解除。",
+            execute = {
+                dev.emyth.app.data.service.PullBackManager.setEnabled(context, true)
+                listOf(UIMessagePart.Text("""{"success":true,"message":"已开启强制拉回"}"""))
+            }
+        )
+    }
+    private val unpullBackTool by lazy {
+        Tool(
+            name = "disable_pull_back",
+            needsApproval = true,
+            description = "解除强制拉回：停止自动把用户拽回 Emyth。",
+            execute = {
+                dev.emyth.app.data.service.PullBackManager.setEnabled(context, false)
+                listOf(UIMessagePart.Text("""{"success":true,"message":"已解除强制拉回"}"""))
+            }
+        )
+    }
+
     // ==================== 获取工具列表 ====================
 
     fun getTools(
@@ -450,6 +475,10 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.AppLock in enabledTools) tools.add(appLockTool)
         if (SystemToolOption.LockChat in enabledTools) tools.add(lockChatTool)
         if (SystemToolOption.LockChat in enabledTools) tools.add(unlockChatTool)
+        if (SystemToolOption.PullBack in enabledTools) {
+            tools.add(pullBackTool)
+            tools.add(unpullBackTool)
+        }
         if (SystemToolOption.Task in enabledTools) {
             tools.add(taskTool)
             tools.add(taskStatusTool)
