@@ -26,4 +26,7 @@ data class ProactiveMessageSetting(
     val aggressiveDebounceSeconds: Int = 30,
     // 悬浮球：主动消息到达时以 Telegram 风格悬浮球提醒，点击直接进入聊天页
     val floatingBubbleEnabled: Boolean = false,
+    // 主动打语音：用户多久没来找我(分钟)，超过就主动弹来电界面邀请通话
+    val voiceCallEnabled: Boolean = false,
+    val voiceCallIdleThresholdMinutes: Int = 60,
 )

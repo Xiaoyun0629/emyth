@@ -71,6 +71,8 @@ import dev.emyth.app.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
 import dev.emyth.app.data.datastore.ProactiveMessageSetting
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.data.datastore.SettingsStore
+import dev.emyth.app.data.event.AppEvent
+import dev.emyth.app.data.event.AppEventBus
 import dev.emyth.app.data.datastore.findProvider
 import dev.emyth.app.data.datastore.getCurrentAssistant
 import dev.emyth.app.data.datastore.findModelById
@@ -413,6 +415,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
     private val json: Json by inject()
     private val chatService: ChatService by inject()
     private val proactiveMessageService = ProactiveMessageService()
+    private val eventBus: AppEventBus by inject()
 
     companion object {
         private const val TAG = "ProactiveMessageTrigger"
@@ -536,6 +539,19 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 // 持有会话引用，防止生成期间 session 被 idle 清除（finally 块会对应 release）。
                 // 放在 claim 之前：即使 claim 失败提前返回，引用也能在 finally 里被正确释放，保持计数平衡。
                 // 同时把数据库里的完整对话同步到 session，防止流式更新时 conv 是空状态导致覆盖历史。
+                // 主动打语音：开启时，若用户超过阈值没来找我，触发来电（不发消息）
+                if (proactiveSetting.voiceCallEnabled && !isFromDeviceEvent && !isScheduledWake) {
+                    val lastMsgTimeMs = conversation?.currentMessages?.lastOrNull()?.createdAt?.toEpochMilliseconds() ?: 0L
+                    val thresholdMs = proactiveSetting.voiceCallIdleThresholdMinutes.coerceAtLeast(1) * 60_000L
+                    if (lastMsgTimeMs == 0L || System.currentTimeMillis() - lastMsgTimeMs >= thresholdMs) {
+                        Log.d(TAG, "主动打语音：空闲超过阈值，触发来电")
+                        eventBus.emit(AppEvent.RequestVoiceCall(conversationId.toString()))
+                        ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
+                        stopSelf()
+                        return@launch
+                    }
+                }
+
                 chatService.addConversationReference(conversationId)
                 if (conversation != null) {
                     chatService.updateConversationState(conversationId) { _ -> conversation }

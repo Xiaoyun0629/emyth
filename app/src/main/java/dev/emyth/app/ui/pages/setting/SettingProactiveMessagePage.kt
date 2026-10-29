@@ -326,6 +326,55 @@ fun SettingProactiveMessagePage(vm: SettingVM = koinInject()) {
                     }
                 }
             }
+            // 主动打语音
+            CardGroup {
+                item(
+                    headlineContent = { Text("主动打语音") },
+                    supportingContent = {
+                        Text("开启后，如果你超过设定时长没来找我，我会主动给你弹来电。需要「主动消息」或「激进模式」也开启，定时触发时才会检查。")
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.proactiveMessageSetting.voiceCallEnabled,
+                            onCheckedChange = { enabled ->
+                                vm.updateSettings(
+                                    settings.copy(
+                                        proactiveMessageSetting = settings.proactiveMessageSetting.copy(
+                                            voiceCallEnabled = enabled
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+                )
+                if (settings.proactiveMessageSetting.voiceCallEnabled) {
+                    item(
+                        headlineContent = { Text("多久没来找我就打电话 (分钟)") },
+                        supportingContent = {
+                            OutlinedTextField(
+                                value = settings.proactiveMessageSetting.voiceCallIdleThresholdMinutes.toString(),
+                                onValueChange = { value ->
+                                    val minutes = value.toIntOrNull()
+                                    if (minutes != null && minutes >= 1) {
+                                        vm.updateSettings(
+                                            settings.copy(
+                                                proactiveMessageSetting = settings.proactiveMessageSetting.copy(
+                                                    voiceCallIdleThresholdMinutes = minutes
+                                                )
+                                            )
+                                        )
+                                    }
+                                },
+                                placeholder = { Text("60") },
+                                singleLine = true,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                            Text("超过这个时长没来找我，我就主动弹来电。最小 1 分钟。")
+                        },
+                    )
+                }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 item {
                     val hasExactAlarm = ProactiveMessageWorker.canScheduleExactAlarms(context)
