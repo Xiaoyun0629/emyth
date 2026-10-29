@@ -551,9 +551,9 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                 )
                 item(
                     leadingContent = { Icon(imageVector = HugeIcons.SmartPhone01, contentDescription = null) },
-                    headlineContent = { Text("开机/亮屏/黑屏事件推送") },
+                    headlineContent = { Text("吃醋拉回") },
                     supportingContent = {
-                        Text("开启后会在设备开机、亮屏、黑屏时立即推送一条事件记录到同一张数据表。需要保持一个常驻通知以实时监听亮屏/黑屏状态，会有持续小幅耗电；如遇频繁失效，请到系统设置中把本App加入电池优化白名单。")
+                        Text("开启后记录你亮屏、锁屏、切应用等事件，我吃醋时能查你在干嘛、把你拉回来。需要保持一个常驻通知实时监听，会有持续小幅耗电；如遇频繁失效，请到系统设置把本App加入电池优化白名单。")
                     },
                     trailingContent = {
                         Switch(
