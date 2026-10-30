@@ -8,6 +8,7 @@ package dev.emyth.app.data.ai.tools
  
 import me.rerere.ai.provider.ImageGenerationParams
 import me.rerere.ai.provider.ProviderManager
+import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.ui.ImageAspectRatio
 import dev.emyth.app.data.datastore.findModelById
 import dev.emyth.app.data.datastore.findProvider
@@ -623,7 +624,7 @@ class LocalTools(
     private fun createConfigureTool() = Tool(
         name = "configure",
         needsApproval = true,
-        description = "全局配置工具。target=mcp 配置MCP服务器(action=add/remove/list)；target=switch 读写布尔开关；target=string 读写字符串字段(用户昵称/字体/背景图路径等)；target=number 读写数字字段(气泡透明度/字号/模糊强度/头像大小/圆角等)。均用 action=list 看可选字段，action=set 设置(key+value)。",
+        description = "全局配置工具。target=mcp 配置MCP服务器(action=add/remove/list)；target=switch 读写布尔开关；target=string 读写字符串字段；target=number 读写数字字段；target=provider 管理AI供应商(action=add 新增:name+url(baseUrl)+token(apiKey)+type(openai/google/claude)；remove 删除:name；edit 修改:name+key(apiKey/baseUrl/name)+value；list 列出)。均用 action=list 看可选内容。",
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
@@ -815,6 +816,71 @@ class LocalTools(
                         listOf(UIMessagePart.Text("""{"success":true,"key":"$key","value":$valueStr}"""))
                     }
                     else -> listOf(UIMessagePart.Text("number 的 action 支持 list / set"))
+                }
+            }
+            if (target == "provider") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val providers = store.settingsFlow.value.providers
+                        val info = if (providers.isEmpty()) "未配置任何 provider" else providers.joinToString("\n") { p ->
+                            val url = when (p) {
+                                is ProviderSetting.OpenAI -> p.baseUrl
+                                is ProviderSetting.Google -> p.baseUrl
+                                is ProviderSetting.Claude -> p.baseUrl
+                            }
+                            "- ${p.name} → $url (enabled=${p.enabled}, models=${p.models.size})"
+                        }
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "add" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val baseUrl = params["url"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val apiKey = params["token"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (name.isBlank() || baseUrl.isBlank()) {
+                            return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"name 和 url(baseUrl) 不能为空"}"""))
+                        }
+                        val type = params["type"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: "openai"
+                        val provider = when (type) {
+                            "google", "gemini" -> ProviderSetting.Google(name = name, apiKey = apiKey, baseUrl = baseUrl)
+                            "claude", "anthropic" -> ProviderSetting.Claude(name = name, apiKey = apiKey, baseUrl = baseUrl)
+                            else -> ProviderSetting.OpenAI(name = name, apiKey = apiKey, baseUrl = baseUrl)
+                        }
+                        store.update { st -> st.copy(providers = st.providers.filterNot { it.name == name } + provider) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"$name","type":"$type"}"""))
+                    }
+                    "remove" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val count = store.settingsFlow.value.providers.count { it.name == name }
+                        store.update { st -> st.copy(providers = st.providers.filterNot { it.name == name }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"removed":$count}"""))
+                    }
+                    "edit" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val value = params["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val providers = store.settingsFlow.value.providers
+                        val target = providers.firstOrNull { it.name == name }
+                            ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到 provider：$name"}"""))
+                        val updated: ProviderSetting = when (key) {
+                            "apiKey" -> when (target) {
+                                is ProviderSetting.OpenAI -> target.copy(apiKey = value)
+                                is ProviderSetting.Google -> target.copy(apiKey = value)
+                                is ProviderSetting.Claude -> target.copy(apiKey = value)
+                            }
+                            "baseUrl" -> when (target) {
+                                is ProviderSetting.OpenAI -> target.copy(baseUrl = value)
+                                is ProviderSetting.Google -> target.copy(baseUrl = value)
+                                is ProviderSetting.Claude -> target.copy(baseUrl = value)
+                            }
+                            "name" -> target.copyProvider(name = value)
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知字段 $key，可改 apiKey/baseUrl/name"}"""))
+                        }
+                        store.update { st -> st.copy(providers = st.providers.map { if (it.id == target.id) updated else it }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"${updated.name}","key":"$key"}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("provider 的 action 支持 list / add / remove / edit"))
                 }
             }
             val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
