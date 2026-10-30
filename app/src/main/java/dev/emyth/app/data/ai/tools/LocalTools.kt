@@ -9,6 +9,10 @@ package dev.emyth.app.data.ai.tools
 import me.rerere.ai.provider.ImageGenerationParams
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.Model
+import me.rerere.ai.provider.ModelType
+import me.rerere.ai.provider.Modality
+import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.ui.ImageAspectRatio
 import dev.emyth.app.data.datastore.findModelById
 import dev.emyth.app.data.datastore.findProvider
@@ -660,6 +664,18 @@ class LocalTools(
                         put("type", "string")
                         put("description", "设置目标时的值(switch:true/false，string:字符串，number:数字)")
                     })
+                    put("modelId", buildJsonObject {
+                        put("type", "string")
+                        put("description", "provider add_model/remove_model 时的模型 ID，如 gpt-4o、qwen-vl-max")
+                    })
+                    put("displayName", buildJsonObject {
+                        put("type", "string")
+                        put("description", "provider add_model 时的模型显示名，可选，默认用 modelId")
+                    })
+                    put("abilities", buildJsonObject {
+                        put("type", "string")
+                        put("description", "provider add_model 时的能力，逗号分隔：tool(工具调用)/reasoning(推理思考)/vision(看图多模态)")
+                    })
                 },
                 required = listOf("action")
             )
@@ -880,7 +896,50 @@ class LocalTools(
                         store.update { st -> st.copy(providers = st.providers.map { if (it.id == target.id) updated else it }) }
                         listOf(UIMessagePart.Text("""{"success":true,"name":"${updated.name}","key":"$key"}"""))
                     }
-                    else -> listOf(UIMessagePart.Text("provider 的 action 支持 list / add / remove / edit"))
+                    "add_model" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val modelId = params["modelId"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (name.isBlank() || modelId.isBlank()) {
+                            return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"name 和 modelId 不能为空"}"""))
+                        }
+                        val providers = store.settingsFlow.value.providers
+                        val target = providers.firstOrNull { it.name == name }
+                            ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到 provider：$name"}"""))
+                        val type = params["type"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: "chat"
+                        val abilitiesStr = params["abilities"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val abilities = abilitiesStr.split(",", "，", " ").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+                        val modelType = if (type == "image") ModelType.IMAGE else ModelType.CHAT
+                        val modelAbilities = buildList {
+                            if ("tool" in abilities) add(ModelAbility.TOOL)
+                            if ("reasoning" in abilities) add(ModelAbility.REASONING)
+                        }
+                        val inputMods = buildList {
+                            add(Modality.TEXT)
+                            if ("vision" in abilities || "image" in abilities) add(Modality.IMAGE)
+                        }
+                        val displayName = params["displayName"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() } ?: modelId
+                        val model = Model(
+                            modelId = modelId,
+                            displayName = displayName,
+                            type = modelType,
+                            inputModalities = inputMods,
+                            abilities = modelAbilities,
+                        )
+                        val updated = target.copyProvider(models = target.models.filterNot { it.modelId == modelId } + model)
+                        store.update { st -> st.copy(providers = st.providers.map { if (it.id == target.id) updated else it }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"provider":"$name","modelId":"$modelId","type":"$type","abilities":"${abilities.joinToString(",")}"}"""))
+                    }
+                    "remove_model" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val modelId = params["modelId"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val providers = store.settingsFlow.value.providers
+                        val target = providers.firstOrNull { it.name == name }
+                            ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到 provider：$name"}"""))
+                        val updated = target.copyProvider(models = target.models.filterNot { it.modelId == modelId })
+                        store.update { st -> st.copy(providers = st.providers.map { if (it.id == target.id) updated else it }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"provider":"$name","removed":"$modelId"}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("provider 的 action 支持 list / add / remove / edit / add_model / remove_model"))
                 }
             }
             val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
