@@ -37,6 +37,9 @@ import java.io.File
 import dev.emyth.app.ui.components.ui.toComposeColor
 import androidx.compose.ui.graphics.toArgb
 import org.koin.java.KoinJavaComponent.getKoin
+import dev.emyth.app.data.datastore.getCurrentAssistant
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * 任务弹窗服务：小悬浮条浮在屏幕顶部，显示任务内容 + 倒计时 + 完成按钮。
@@ -67,6 +70,8 @@ class TaskOverlayService : Service() {
     private var overlayView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var countdownText: TextView? = null
+    private var containerBg: GradientDrawable? = null
+    private var doneBtnBg: GradientDrawable? = null
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -138,7 +143,7 @@ class TaskOverlayService : Service() {
             background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
                 setColor(bgColor)
-            }
+            }.also { containerBg = it }
         }
 
         val taskText = TextView(this).apply {
@@ -166,7 +171,7 @@ class TaskOverlayService : Service() {
             background = GradientDrawable().apply {
                 cornerRadius = dp(14).toFloat()
                 setColor(btnColor)
-            }
+            }.also { doneBtnBg = it }
             setOnClickListener {
                 if (task.type == "photo") {
                     takePhotoAndSubmit()
@@ -206,6 +211,21 @@ class TaskOverlayService : Service() {
         }
 
         updateCountdown()
+        observeColors()
+    }
+
+    /** 监听颜色设置变化，实时刷新悬浮条颜色 */
+    private fun observeColors() {
+        scope.launch {
+            getKoin().get<SettingsStore>().settingsFlow
+                .map { it.taskSetting }
+                .distinctUntilChanged()
+                .collect { task ->
+                    task.backgroundColor?.toComposeColor()?.toArgb()?.let { containerBg?.setColor(it) }
+                    task.buttonColor?.toComposeColor()?.toArgb()?.let { doneBtnBg?.setColor(it) }
+                    task.countdownColor?.toComposeColor()?.toArgb()?.let { countdownText?.setTextColor(it) }
+                }
+        }
     }
 
     private fun updateCountdown() {
@@ -248,7 +268,8 @@ class TaskOverlayService : Service() {
     /** 文字提交：弹输入框，输入后提交 */
     private fun showTextInputDialog() {
         val editText = EditText(this).apply {
-            hint = "写点什么，让安焮审核"
+            val assistantName = runCatching { getKoin().get<SettingsStore>().settingsFlow.value.getCurrentAssistant().name }.getOrNull().orEmpty()
+            hint = if (assistantName.isNotBlank()) "写点什么，让 $assistantName 审核" else "写点什么，提交审核"
             setTextColor(android.graphics.Color.WHITE)
             setHintTextColor(android.graphics.Color.GRAY)
             setPadding(dp(16), dp(12), dp(16), dp(12))
