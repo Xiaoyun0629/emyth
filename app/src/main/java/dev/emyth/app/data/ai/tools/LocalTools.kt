@@ -623,13 +623,13 @@ class LocalTools(
     private fun createConfigureTool() = Tool(
         name = "configure",
         needsApproval = true,
-        description = "全局配置工具。target=mcp 配置MCP服务器(action=add/remove/list，url 形如 http://120.76.178.0:8877/mcp，type 默认 streamable_http)；target=switch 读写设置开关(action=list 列出可选开关，action=set 设置开关，key=字段名 value=true/false)。",
+        description = "全局配置工具。target=mcp 配置MCP服务器(action=add/remove/list)；target=switch 读写布尔开关；target=string 读写字符串字段(用户昵称/字体/背景图路径等)；target=number 读写数字字段(气泡透明度/字号/模糊强度/头像大小/圆角等)。均用 action=list 看可选字段，action=set 设置(key+value)。",
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
                     put("target", buildJsonObject {
                         put("type", "string")
-                        put("description", "配置目标：mcp(默认) 或 switch")
+                        put("description", "配置目标：mcp(默认)/switch/string/number")
                     })
                     put("action", buildJsonObject {
                         put("type", "string")
@@ -653,11 +653,11 @@ class LocalTools(
                     })
                     put("key", buildJsonObject {
                         put("type", "string")
-                        put("description", "switch 目标时的开关字段名（用 list 查看可选值）")
+                        put("description", "设置目标时的字段名（用 action=list 查看可选值）")
                     })
                     put("value", buildJsonObject {
                         put("type", "string")
-                        put("description", "switch 目标时的开关值(true/false)")
+                        put("description", "设置目标时的值(switch:true/false，string:字符串，number:数字)")
                     })
                 },
                 required = listOf("action")
@@ -728,6 +728,93 @@ class LocalTools(
                         listOf(UIMessagePart.Text("""{"success":true,"key":"$key","value":$bool}"""))
                     }
                     else -> listOf(UIMessagePart.Text("switch 的 action 支持 list / set"))
+                }
+            }
+            if (target == "string") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val d = store.settingsFlow.value.displaySetting
+                        val info = listOf(
+                            "用户昵称 userNickname = ${d.userNickname}",
+                            "自定义字体 customFontPath = ${d.customFontPath}",
+                            "输入框背景 inputBackgroundPath = ${d.inputBackgroundPath}",
+                            "用户头像框 userAvatarFramePath = ${d.userAvatarFramePath}",
+                            "AI头像框 aiAvatarFramePath = ${d.aiAvatarFramePath}",
+                            "用户气泡背景图 userBubbleImagePath = ${d.userBubbleImagePath}",
+                            "AI气泡背景图 assistantBubbleImagePath = ${d.assistantBubbleImagePath}",
+                            "侧边栏背景 drawerBackgroundPath = ${d.drawerBackgroundPath}",
+                        ).joinToString("\n")
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "set" -> {
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val value = params["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val d = store.settingsFlow.value.displaySetting
+                        val nd = when (key) {
+                            "userNickname" -> d.copy(userNickname = value)
+                            "customFontPath" -> d.copy(customFontPath = value)
+                            "inputBackgroundPath" -> d.copy(inputBackgroundPath = value)
+                            "userAvatarFramePath" -> d.copy(userAvatarFramePath = value)
+                            "aiAvatarFramePath" -> d.copy(aiAvatarFramePath = value)
+                            "userBubbleImagePath" -> d.copy(userBubbleImagePath = value)
+                            "assistantBubbleImagePath" -> d.copy(assistantBubbleImagePath = value)
+                            "drawerBackgroundPath" -> d.copy(drawerBackgroundPath = value)
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知字符串字段 $key，用 action=list 查看可选值"}"""))
+                        }
+                        store.update { st -> st.copy(displaySetting = nd) }
+                        listOf(UIMessagePart.Text("""{"success":true,"key":"$key","value":"$value"}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("string 的 action 支持 list / set"))
+                }
+            }
+            if (target == "number") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val d = store.settingsFlow.value.displaySetting
+                        val info = listOf(
+                            "字号比例 fontSizeRatio = ${d.fontSizeRatio}",
+                            "抽屉模糊强度 interfaceBlurRadius = ${d.interfaceBlurRadius} (3~20)",
+                            "音量键滚动比例 volumeKeyScrollRatio = ${d.volumeKeyScrollRatio}",
+                            "气泡透明度 chatBubbleTransparency = ${d.chatBubbleTransparency} (0~1)",
+                            "思考链透明度 thinkingChainTransparency = ${d.thinkingChainTransparency} (0~1)",
+                            "头像大小 avatarSize = ${d.avatarSize} (24~64)",
+                            "侧边栏元素透明度 drawerItemAlpha = ${d.drawerItemAlpha} (0~1)",
+                            "思考字号比例 thinkingFontSizeRatio = ${d.thinkingFontSizeRatio}",
+                            "气泡圆角 bubbleCornerRadius = ${d.bubbleCornerRadius}",
+                            "长文本阈值 pasteLongTextThreshold = ${d.pasteLongTextThreshold}",
+                        ).joinToString("\n")
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "set" -> {
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val valueStr = params["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val d = store.settingsFlow.value.displaySetting
+                        val nd = when (key) {
+                            "pasteLongTextThreshold" -> d.copy(pasteLongTextThreshold = valueStr.toIntOrNull() ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"pasteLongTextThreshold 需要整数"}""")))
+                            else -> {
+                                val f = valueStr.toFloatOrNull() ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"value 必须是数字"}"""))
+                                when (key) {
+                                    "fontSizeRatio" -> d.copy(fontSizeRatio = f)
+                                    "interfaceBlurRadius" -> d.copy(interfaceBlurRadius = f)
+                                    "volumeKeyScrollRatio" -> d.copy(volumeKeyScrollRatio = f)
+                                    "chatBubbleTransparency" -> d.copy(chatBubbleTransparency = f)
+                                    "thinkingChainTransparency" -> d.copy(thinkingChainTransparency = f)
+                                    "avatarSize" -> d.copy(avatarSize = f)
+                                    "drawerItemAlpha" -> d.copy(drawerItemAlpha = f)
+                                    "thinkingFontSizeRatio" -> d.copy(thinkingFontSizeRatio = f)
+                                    "bubbleCornerRadius" -> d.copy(bubbleCornerRadius = f)
+                                    else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知数字字段 $key，用 action=list 查看可选值"}"""))
+                                }
+                            }
+                        }
+                        store.update { st -> st.copy(displaySetting = nd) }
+                        listOf(UIMessagePart.Text("""{"success":true,"key":"$key","value":$valueStr}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("number 的 action 支持 list / set"))
                 }
             }
             val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
