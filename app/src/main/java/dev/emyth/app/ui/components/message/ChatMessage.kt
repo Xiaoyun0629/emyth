@@ -325,10 +325,13 @@ fun ChatMessage(
                         model = model,
                         assistant = assistant,
                         loading = loading,
+                        compact = true,
                     )
                 }
-                ProvideTextStyle(textStyle) {
-                    bubbleContent()
+                Box(modifier = Modifier.weight(1f)) {
+                    ProvideTextStyle(textStyle) {
+                        bubbleContent()
+                    }
                 }
                 if (message.role == MessageRole.USER) {
                     ChatMessageUserAvatar(
