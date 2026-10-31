@@ -48,11 +48,11 @@ fun ThemeShareSection(modifier: Modifier = Modifier) {
                 }
             }
         }) {
-            Icon(HugeIcons.Share, contentDescription = null)
+            Icon(HugeIcons.Share01, contentDescription = null)
             Text("导出主题")
         }
         OutlinedButton(onClick = { showImport = true }) {
-            Icon(HugeIcons.FileImport, contentDescription = null)
+            Icon(HugeIcons.Download01, contentDescription = null)
             Text("导入主题")
         }
     }
