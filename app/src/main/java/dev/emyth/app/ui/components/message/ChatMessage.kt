@@ -1072,7 +1072,21 @@ private fun BubbleSurface(
         BubbleCornerStyle.SYMMETRIC -> RoundedCornerShape(cornerRadius)
     }
     val hasImage = imagePath.isNotBlank() && java.io.File(imagePath).exists()
-    if (materialMode == DisplayMaterialMode.GLASS) {
+    val bubbleImageStyle = BubbleImageStyleConfig(
+        imageUri = imagePath,
+        cropLeftRatio = imageParams.cropLeftRatio,
+        cropTopRatio = imageParams.cropTopRatio,
+        cropRightRatio = imageParams.cropRightRatio,
+        cropBottomRatio = imageParams.cropBottomRatio,
+        repeatXStartRatio = imageParams.repeatXStartRatio,
+        repeatXEndRatio = imageParams.repeatXEndRatio,
+        repeatYStartRatio = imageParams.repeatYStartRatio,
+        repeatYEndRatio = imageParams.repeatYEndRatio,
+        imageScale = imageParams.imageScale,
+        renderMode = imageParams.renderMode,
+    )
+    if (materialMode == DisplayMaterialMode.TRANSLUCENT) {
+        // 磨砂玻璃 = kyant backdrop 液态玻璃
         Box(
             modifier = Modifier
                 .animateContentSize()
@@ -1086,32 +1100,72 @@ private fun BubbleSurface(
         ) {
             Column(modifier = Modifier.padding(8.dp)) { content() }
         }
+    } else if (materialMode == DisplayMaterialMode.GLASS) {
+        // 液态玻璃 = 七层叠加(RenderEffect 实时模糊 + 玻璃填充 + 多层高光)
+        Box(
+            modifier = Modifier
+                .animateContentSize()
+                .clip(shape)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .border(1.dp, glassBorderColor, shape)
+        ) {
+            if (finalLiveBubbleBlurEnabled) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(liveFragmentModifier)
+                )
+            }
+            if (hasImage) {
+                BubbleImageBackgroundSurface(
+                    imageStyle = bubbleImageStyle,
+                    shape = shape,
+                    modifier = Modifier.matchParentSize(),
+                    contentPadding = PaddingValues(0.dp),
+                ) {}
+            }
+            if (finalLiveBubbleBlurEnabled && isDarkTheme) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(liveBubbleNightReadabilityModifier)
+                )
+            }
+            if (!hasImage || overlayEnabled) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(glassFillModifier)
+                )
+            }
+            if (finalLiveBubbleBlurEnabled) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(liveBubbleRadialHighlightModifier)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .then(glassHighlightModifier)
+            )
+            if (finalLiveBubbleBlurEnabled) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(liveBubbleEdgeHighlightModifier)
+                )
+            }
+            Column(modifier = Modifier.padding(8.dp)) { content() }
+        }
     } else if (hasImage) {
         BubbleImageBackgroundSurface(
-            imageStyle = BubbleImageStyleConfig(
-                imageUri = imagePath,
-                cropLeftRatio = imageParams.cropLeftRatio,
-                cropTopRatio = imageParams.cropTopRatio,
-                cropRightRatio = imageParams.cropRightRatio,
-                cropBottomRatio = imageParams.cropBottomRatio,
-                repeatXStartRatio = imageParams.repeatXStartRatio,
-                repeatXEndRatio = imageParams.repeatXEndRatio,
-                repeatYStartRatio = imageParams.repeatYStartRatio,
-                repeatYEndRatio = imageParams.repeatYEndRatio,
-                imageScale = imageParams.imageScale,
-                renderMode = imageParams.renderMode,
-            ),
+            imageStyle = bubbleImageStyle,
             shape = shape,
             modifier = Modifier
                 .animateContentSize()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                .then(
-                    if (materialMode == DisplayMaterialMode.TRANSLUCENT) {
-                        Modifier.border(1.dp, translucentBorderColor, shape)
-                    } else {
-                        Modifier
-                    }
-                ),
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
             contentPadding = PaddingValues(8.dp),
         ) {
             if (overlayEnabled) {
@@ -1128,11 +1182,6 @@ private fun BubbleSurface(
             modifier = Modifier.animateContentSize(),
             shape = shape,
             color = color.copy(alpha = effectiveAlpha),
-            border = if (materialMode == DisplayMaterialMode.TRANSLUCENT) {
-                BorderStroke(1.dp, translucentBorderColor)
-            } else {
-                null
-            },
             onClick = onClick ?: {},
         ) {
             Column(modifier = Modifier.padding(8.dp)) { content() }
