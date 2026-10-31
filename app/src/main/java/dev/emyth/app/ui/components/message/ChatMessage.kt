@@ -80,6 +80,7 @@ import kotlin.math.max
 import dev.emyth.app.ui.theme.LocalDarkMode
 import dev.emyth.app.ui.theme.LocalMaterialMode
 import dev.emyth.app.data.datastore.BubbleCornerStyle
+import dev.emyth.app.data.datastore.BubbleImageStyleParams
 import dev.emyth.app.ui.theme.liquidGlass
 import dev.emyth.app.data.datastore.DisplayMaterialMode
 import androidx.compose.ui.graphics.Color
@@ -531,6 +532,7 @@ private fun MessagePartsBlock(
                                                         bubbleAlpha = bubbleAlpha,
                                                         cornerStyle = displaySettings.bubbleCornerStyle,
                                                         isUser = true,
+                                                        imageParams = displaySettings.userBubbleImageParams,
                                                         onClick = { onUserMessageClick?.invoke() },
                                                     ) {
                                                         MarkdownBlock(
@@ -554,6 +556,7 @@ private fun MessagePartsBlock(
                                             bubbleAlpha = bubbleAlpha,
                                             cornerStyle = displaySettings.bubbleCornerStyle,
                                             isUser = true,
+                                            imageParams = displaySettings.userBubbleImageParams,
                                             onClick = { onUserMessageClick?.invoke() },
                                         ) {
                                             MarkdownBlock(
@@ -585,6 +588,7 @@ private fun MessagePartsBlock(
                                                         overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                                         bubbleAlpha = bubbleAlpha,
                                                     cornerStyle = displaySettings.bubbleCornerStyle,
+                                                    imageParams = displaySettings.assistantBubbleImageParams,
                                                     ) {
                                                         MarkdownBlock(
                                                             content = segment.replaceRegexes(
@@ -619,6 +623,7 @@ private fun MessagePartsBlock(
                                             overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                             bubbleAlpha = bubbleAlpha,
                                         cornerStyle = displaySettings.bubbleCornerStyle,
+                                        imageParams = displaySettings.assistantBubbleImageParams,
                                         ) {
                                             MarkdownBlock(
                                                 content = displayText.replaceRegexes(
@@ -849,6 +854,7 @@ private fun BubbleSurface(
     enableLiveBubbleBlur: Boolean = false,
     cornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
     isUser: Boolean = false,
+    imageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
     content: @Composable () -> Unit,
 ) {
     val materialMode = LocalMaterialMode.current
@@ -1082,7 +1088,19 @@ private fun BubbleSurface(
         }
     } else if (hasImage) {
         BubbleImageBackgroundSurface(
-            imageStyle = BubbleImageStyleConfig(imageUri = imagePath),
+            imageStyle = BubbleImageStyleConfig(
+                imageUri = imagePath,
+                cropLeftRatio = imageParams.cropLeftRatio,
+                cropTopRatio = imageParams.cropTopRatio,
+                cropRightRatio = imageParams.cropRightRatio,
+                cropBottomRatio = imageParams.cropBottomRatio,
+                repeatXStartRatio = imageParams.repeatXStartRatio,
+                repeatXEndRatio = imageParams.repeatXEndRatio,
+                repeatYStartRatio = imageParams.repeatYStartRatio,
+                repeatYEndRatio = imageParams.repeatYEndRatio,
+                imageScale = imageParams.imageScale,
+                renderMode = imageParams.renderMode,
+            ),
             shape = shape,
             modifier = Modifier
                 .animateContentSize()

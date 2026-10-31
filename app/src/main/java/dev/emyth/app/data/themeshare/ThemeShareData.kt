@@ -1,6 +1,7 @@
 package dev.emyth.app.data.themeshare
 
 import kotlinx.serialization.Serializable
+import dev.emyth.app.data.datastore.BubbleImageStyleParams
 
 /**
  * 一套主题的分享数据（序列化成 JSON 后 gzip+base64 成分享码）。
@@ -36,4 +37,7 @@ data class ThemeShareData(
     val wallpaperBase64: String? = null,
     val userBubbleImageBase64: String? = null,
     val assistantBubbleImageBase64: String? = null,
+    // 九宫格气泡图参数
+    val userBubbleImageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
+    val assistantBubbleImageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
 )

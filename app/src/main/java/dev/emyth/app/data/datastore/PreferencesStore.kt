@@ -702,6 +702,20 @@ enum class BubbleCornerStyle {
 }
 
 @Serializable
+data class BubbleImageStyleParams(
+    val cropLeftRatio: Float = 0f,
+    val cropTopRatio: Float = 0f,
+    val cropRightRatio: Float = 0f,
+    val cropBottomRatio: Float = 0f,
+    val repeatXStartRatio: Float = 0.35f,
+    val repeatXEndRatio: Float = 0.65f,
+    val repeatYStartRatio: Float = 0.35f,
+    val repeatYEndRatio: Float = 0.65f,
+    val imageScale: Float = 1f,
+    val renderMode: String = "tiled_nine_slice",
+)
+
+@Serializable
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
@@ -781,6 +795,9 @@ data class DisplaySetting(
     // 气泡圆角样式：对称圆 / 不对称尾巴(op风格，靠屏幕边一侧小角)
     val bubbleCornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
     val bubbleImageOverlayEnabled: Boolean = false, // 关=纯图片, 开=图片+主题色遮罩
+    // 九宫格气泡图参数（用户/AI 各一套）
+    val userBubbleImageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
+    val assistantBubbleImageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
 )
 
 @Serializable

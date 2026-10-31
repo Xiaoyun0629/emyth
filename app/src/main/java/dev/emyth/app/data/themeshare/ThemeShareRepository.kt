@@ -39,6 +39,8 @@ object ThemeShareRepository {
             wallpaperBase64 = assistant.background?.let { ThemeShareCodec.fileToBase64(it) },
             userBubbleImageBase64 = ds.userBubbleImagePath.takeIf { it.isNotBlank() }?.let { ThemeShareCodec.fileToBase64(it) },
             assistantBubbleImageBase64 = ds.assistantBubbleImagePath.takeIf { it.isNotBlank() }?.let { ThemeShareCodec.fileToBase64(it) },
+            userBubbleImageParams = ds.userBubbleImageParams,
+            assistantBubbleImageParams = ds.assistantBubbleImageParams,
         )
     }
 
@@ -72,6 +74,8 @@ object ThemeShareRepository {
                     inputFieldColor = data.inputFieldColor,
                     userBubbleImagePath = userBubblePath ?: settings.displaySetting.userBubbleImagePath,
                     assistantBubbleImagePath = aiBubblePath ?: settings.displaySetting.assistantBubbleImagePath,
+                    userBubbleImageParams = data.userBubbleImageParams,
+                    assistantBubbleImageParams = data.assistantBubbleImageParams,
                 ),
                 assistants = settings.assistants.map { a ->
                     if (a.id == settings.assistantId && wallpaperPath != null) a.copy(background = wallpaperPath) else a

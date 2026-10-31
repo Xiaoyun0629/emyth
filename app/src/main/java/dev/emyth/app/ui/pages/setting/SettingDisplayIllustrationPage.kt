@@ -47,10 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 import dev.emyth.app.data.datastore.BubbleCornerStyle
+import dev.emyth.app.data.datastore.BubbleImageStyleParams
 import dev.emyth.app.data.datastore.DisplaySetting
 import dev.emyth.app.ui.components.nav.BackButton
 import dev.emyth.app.ui.components.themeshare.ThemeShareSection
 import dev.emyth.app.ui.components.ui.CardGroup
+import dev.emyth.app.ui.components.ui.CardGroupScope
 import dev.emyth.app.ui.theme.CustomColors
 import dev.emyth.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -323,6 +325,25 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                 }
             }
 
+            // 气泡九宫格裁剪参数
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text("气泡九宫格裁剪") },
+                ) {
+                    item(headlineContent = { Text("用户气泡参数") })
+                    bubbleImageParamsEditor(
+                        params = displaySetting.userBubbleImageParams,
+                        onParamsChange = { updateDisplaySetting(displaySetting.copy(userBubbleImageParams = it)) },
+                    )
+                    item(headlineContent = { Text("AI气泡参数") })
+                    bubbleImageParamsEditor(
+                        params = displaySetting.assistantBubbleImageParams,
+                        onParamsChange = { updateDisplaySetting(displaySetting.copy(assistantBubbleImageParams = it)) },
+                    )
+                }
+            }
+
             // 主题分享
             item {
                 CardGroup(
@@ -579,4 +600,46 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
             }
         }
     }
+}
+
+@Composable
+private fun ParamSliderRow(
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    onChange: (Float) -> Unit,
+    format: (Float) -> String = { "${(it * 100).toInt()}" },
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Slider(value = value, onValueChange = onChange, valueRange = valueRange, modifier = Modifier.weight(1f))
+        Text(text = format(value))
+    }
+}
+
+private fun CardGroupScope.bubbleImageParamsEditor(
+    params: BubbleImageStyleParams,
+    onParamsChange: (BubbleImageStyleParams) -> Unit,
+) {
+    item(
+        headlineContent = { Text("铺图模式") },
+        supportingContent = { Text("关=九宫格平铺(重复中间区), 开=九宫格拉伸") },
+        trailingContent = {
+            Switch(
+                checked = params.renderMode == "nine_patch",
+                onCheckedChange = { onParamsChange(params.copy(renderMode = if (it) "nine_patch" else "tiled_nine_slice")) },
+            )
+        },
+    )
+    item(headlineContent = { Text("裁剪-左") }, supportingContent = { ParamSliderRow(params.cropLeftRatio, 0f..0.45f) { onParamsChange(params.copy(cropLeftRatio = it)) } })
+    item(headlineContent = { Text("裁剪-上") }, supportingContent = { ParamSliderRow(params.cropTopRatio, 0f..0.45f) { onParamsChange(params.copy(cropTopRatio = it)) } })
+    item(headlineContent = { Text("裁剪-右") }, supportingContent = { ParamSliderRow(params.cropRightRatio, 0f..0.45f) { onParamsChange(params.copy(cropRightRatio = it)) } })
+    item(headlineContent = { Text("裁剪-下") }, supportingContent = { ParamSliderRow(params.cropBottomRatio, 0f..0.45f) { onParamsChange(params.copy(cropBottomRatio = it)) } })
+    item(headlineContent = { Text("重复区-X起点") }, supportingContent = { ParamSliderRow(params.repeatXStartRatio, 0.05f..0.9f) { onParamsChange(params.copy(repeatXStartRatio = it)) } })
+    item(headlineContent = { Text("重复区-X终点") }, supportingContent = { ParamSliderRow(params.repeatXEndRatio, 0.05f..0.95f) { onParamsChange(params.copy(repeatXEndRatio = it)) } })
+    item(headlineContent = { Text("重复区-Y起点") }, supportingContent = { ParamSliderRow(params.repeatYStartRatio, 0.05f..0.9f) { onParamsChange(params.copy(repeatYStartRatio = it)) } })
+    item(headlineContent = { Text("重复区-Y终点") }, supportingContent = { ParamSliderRow(params.repeatYEndRatio, 0.05f..0.95f) { onParamsChange(params.copy(repeatYEndRatio = it)) } })
+    item(headlineContent = { Text("缩放") }, supportingContent = { ParamSliderRow(params.imageScale, 0.2f..3f, format = { "%.2f".format(it) }) { onParamsChange(params.copy(imageScale = it)) } })
 }
