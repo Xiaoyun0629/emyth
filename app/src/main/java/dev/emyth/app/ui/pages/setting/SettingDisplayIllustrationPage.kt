@@ -60,7 +60,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
+    var displaySetting by remember { mutableStateOf(settings.displaySetting) }
     val context = LocalContext.current
 
     fun updateDisplaySetting(setting: DisplaySetting) {
