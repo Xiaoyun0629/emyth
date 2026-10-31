@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Download01
+import me.rerere.hugeicons.stroke.Share01
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
