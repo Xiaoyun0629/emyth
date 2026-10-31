@@ -308,18 +308,6 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("气泡头像位置") },
-                        supportingContent = { Text("开=头像在气泡旁边, 关=头像在气泡上方") },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.bubbleAvatarBeside,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(bubbleAvatarBeside = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
                         headlineContent = { Text("背景图叠加主题色遮罩") },
                         supportingContent = { Text("关=纯图片, 开=图片+主题色遮罩") },
                         trailingContent = {

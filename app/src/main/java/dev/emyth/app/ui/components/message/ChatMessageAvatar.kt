@@ -129,7 +129,6 @@ fun ChatMessageAssistantAvatar(
     model: Model?,
     assistant: Assistant?,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
 ) {
     val settings = LocalSettings.current
     val showIcon = settings.displaySetting.showModelIcon
@@ -159,7 +158,7 @@ fun ChatMessageAssistantAvatar(
                     }
                 }
                 Column(
-                    modifier = if (compact) Modifier else Modifier.weight(1f)
+                    modifier = Modifier.weight(1f)
                 ) {
                     if(settings.displaySetting.showModelName) {
                         Text(
@@ -195,7 +194,7 @@ fun ChatMessageAssistantAvatar(
                     }
                 }
                 Column(
-                    modifier = if (compact) Modifier else Modifier.weight(1f)
+                    modifier = Modifier.weight(1f)
                 ) {
                     if(settings.displaySetting.showModelName) {
                         Text(

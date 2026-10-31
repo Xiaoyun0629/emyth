@@ -288,9 +288,29 @@ fun ChatMessage(
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        val avatarBeside = settings.bubbleAvatarBeside
-        val hasParts = !message.parts.isEmptyUIMessage()
-        val bubbleContent: @Composable () -> Unit = {
+        if (!message.parts.isEmptyUIMessage()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            ) {
+                ChatMessageAssistantAvatar(
+                    message = message,
+                    model = model,
+                    assistant = assistant,
+                    loading = loading,
+                    modifier = Modifier.weight(1f)
+                )
+                ChatMessageUserAvatar(
+                    message = message,
+                    avatar = settings.userAvatar,
+                    nickname = settings.userNickname,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        ProvideTextStyle(textStyle) {
             MessagePartsBlock(
                 assistant = assistant,
                 role = message.role,
@@ -307,65 +327,6 @@ fun ChatMessage(
                     content = translation,
                     onClickCitation = {}
                 )
-            }
-        }
-        if (avatarBeside && hasParts) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = if (message.role == MessageRole.USER) {
-                    Arrangement.spacedBy(8.dp, Alignment.End)
-                } else {
-                    Arrangement.spacedBy(8.dp, Alignment.Start)
-                },
-            ) {
-                if (message.role == MessageRole.ASSISTANT) {
-                    ChatMessageAssistantAvatar(
-                        message = message,
-                        model = model,
-                        assistant = assistant,
-                        loading = loading,
-                        compact = true,
-                    )
-                }
-                Box(modifier = Modifier.weight(1f, fill = false)) {
-                    ProvideTextStyle(textStyle) {
-                        bubbleContent()
-                    }
-                }
-                if (message.role == MessageRole.USER) {
-                    ChatMessageUserAvatar(
-                        message = message,
-                        avatar = settings.userAvatar,
-                        nickname = settings.userNickname,
-                    )
-                }
-            }
-        } else {
-            if (hasParts) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                ) {
-                    ChatMessageAssistantAvatar(
-                        message = message,
-                        model = model,
-                        assistant = assistant,
-                        loading = loading,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ChatMessageUserAvatar(
-                        message = message,
-                        avatar = settings.userAvatar,
-                        nickname = settings.userNickname,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            ProvideTextStyle(textStyle) {
-                bubbleContent()
             }
         }
         val showActions = if (lastMessage) {
