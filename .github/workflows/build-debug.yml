@@ -41,11 +41,10 @@ jobs:
       - name: Build debug + lock APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug assembleLock --no-daemon
+          ./gradlew assembleLock --no-daemon
 
       - name: Push APK to server
         run: |
-          curl -s --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 10 -X POST -H "Authorization: Bearer ${{ secrets.APK_UPLOAD_TOKEN }}" --data-binary @app/build/outputs/apk/debug/app-arm64-v8a-debug.apk http://120.76.178.0:8080/debug.apk | head -c 100 || true
           curl -s --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 10 -X POST -H "Authorization: Bearer ${{ secrets.APK_UPLOAD_TOKEN }}" --data-binary @app/build/outputs/apk/lock/app-arm64-v8a-lock.apk http://120.76.178.0:8080/lock.apk | head -c 100 || true
 
       - name: Upload APK
@@ -53,5 +52,4 @@ jobs:
         with:
           name: apk
           path: |
-            app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/lock/*.apk
