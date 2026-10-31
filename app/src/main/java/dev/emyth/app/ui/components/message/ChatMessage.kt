@@ -21,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -1129,10 +1130,11 @@ private fun BubbleSurface(
             Column(modifier = Modifier.padding(8.dp)) { content() }
         }
     } else if (hasImage) {
-        Box(
+        BubbleImageBackgroundSurface(
+            imageStyle = BubbleImageStyleConfig(imageUri = imagePath),
+            shape = shape,
             modifier = Modifier
                 .animateContentSize()
-                .clip(shape)
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
                 .then(
                     if (materialMode == DisplayMaterialMode.TRANSLUCENT) {
@@ -1140,14 +1142,9 @@ private fun BubbleSurface(
                     } else {
                         Modifier
                     }
-                )
+                ),
+            contentPadding = PaddingValues(8.dp),
         ) {
-            AsyncImage(
-                model = imagePath,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
             if (overlayEnabled) {
                 Box(
                     modifier = Modifier
@@ -1155,7 +1152,7 @@ private fun BubbleSurface(
                         .background(color.copy(alpha = effectiveAlpha))
                 )
             }
-            Column(modifier = Modifier.padding(8.dp)) { content() }
+            content()
         }
     } else {
         Surface(

@@ -100,9 +100,15 @@ private fun rememberBubbleImageBitmap(uriString: String): ImageBitmap? {
         bitmap =
             withContext(Dispatchers.IO) {
                 runCatching {
-                    context.contentResolver.openInputStream(Uri.parse(uriString))?.use { input ->
-                        BitmapFactory.decodeStream(input)?.asImageBitmap()
+                    val decoded = if (uriString.startsWith("content://") || uriString.startsWith("file://")) {
+                        context.contentResolver.openInputStream(Uri.parse(uriString))?.use { input ->
+                            BitmapFactory.decodeStream(input)
+                        }
+                    } else {
+                        // 本地 file 绝对路径
+                        BitmapFactory.decodeFile(uriString)
                     }
+                    decoded?.asImageBitmap()
                 }.getOrNull()
             }
     }
