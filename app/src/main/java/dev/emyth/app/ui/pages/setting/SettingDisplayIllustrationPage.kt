@@ -606,8 +606,8 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
 private fun ParamSliderRow(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
-    onChange: (Float) -> Unit,
     format: (Float) -> String = { "${(it * 100).toInt()}" },
+    onChange: (Float) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
