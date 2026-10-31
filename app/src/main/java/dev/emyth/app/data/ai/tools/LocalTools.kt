@@ -13,6 +13,8 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.Modality
 import me.rerere.ai.provider.ModelAbility
+import me.rerere.tts.provider.TTSProviderSetting
+import me.rerere.asr.ASRProviderSetting
 import me.rerere.ai.ui.ImageAspectRatio
 import dev.emyth.app.data.datastore.findModelById
 import dev.emyth.app.data.datastore.findProvider
@@ -940,6 +942,164 @@ class LocalTools(
                         listOf(UIMessagePart.Text("""{"success":true,"provider":"$name","removed":"$modelId"}"""))
                     }
                     else -> listOf(UIMessagePart.Text("provider 的 action 支持 list / add / remove / edit / add_model / remove_model"))
+                }
+            }
+            if (target == "tts") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val providers = store.settingsFlow.value.ttsProviders
+                        val info = if (providers.isEmpty()) "未配置任何 TTS" else providers.joinToString("\n") { p ->
+                            val url = when (p) {
+                                is TTSProviderSetting.OpenAI -> p.baseUrl
+                                is TTSProviderSetting.Gemini -> p.baseUrl
+                                is TTSProviderSetting.MiniMax -> p.baseUrl
+                                is TTSProviderSetting.Qwen -> p.baseUrl
+                                is TTSProviderSetting.Groq -> p.baseUrl
+                                is TTSProviderSetting.XAI -> p.baseUrl
+                                is TTSProviderSetting.MiMo -> p.baseUrl
+                                is TTSProviderSetting.ElevenLabs -> p.baseUrl
+                                is TTSProviderSetting.SystemTTS -> "(系统TTS)"
+                            }
+                            "- ${p.name} → $url"
+                        }
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "add" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val apiKey = params["token"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val baseUrl = params["url"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (name.isBlank()) {
+                            return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"name 不能为空"}"""))
+                        }
+                        val type = params["type"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: "openai"
+                        val provider = when (type) {
+                            "openai" -> TTSProviderSetting.OpenAI(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.openai.com/v1" })
+                            "gemini" -> TTSProviderSetting.Gemini(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://generativelanguage.googleapis.com/v1beta" })
+                            "system" -> TTSProviderSetting.SystemTTS(name = name)
+                            "minimax" -> TTSProviderSetting.MiniMax(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.minimaxi.com/v1" })
+                            "qwen" -> TTSProviderSetting.Qwen(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://dashscope.aliyuncs.com/api/v1" })
+                            "groq" -> TTSProviderSetting.Groq(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.groq.com/openai/v1" })
+                            "xai" -> TTSProviderSetting.XAI(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.x.ai/v1" })
+                            "mimo" -> TTSProviderSetting.MiMo(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.xiaomimimo.com/v1" })
+                            "elevenlabs" -> TTSProviderSetting.ElevenLabs(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.elevenlabs.io/v1" })
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知 TTS 类型 $type，可选 openai/gemini/system/minimax/qwen/groq/xai/mimo/elevenlabs"}"""))
+                        }
+                        store.update { st -> st.copy(ttsProviders = st.ttsProviders.filterNot { it.name == name } + provider) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"$name","type":"$type"}"""))
+                    }
+                    "remove" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val count = store.settingsFlow.value.ttsProviders.count { it.name == name }
+                        store.update { st -> st.copy(ttsProviders = st.ttsProviders.filterNot { it.name == name }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"removed":$count}"""))
+                    }
+                    "edit" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val value = params["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val target = store.settingsFlow.value.ttsProviders.firstOrNull { it.name == name }
+                            ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到 TTS：$name"}"""))
+                        val updated: TTSProviderSetting = when (key) {
+                            "apiKey" -> when (target) {
+                                is TTSProviderSetting.OpenAI -> target.copy(apiKey = value)
+                                is TTSProviderSetting.Gemini -> target.copy(apiKey = value)
+                                is TTSProviderSetting.MiniMax -> target.copy(apiKey = value)
+                                is TTSProviderSetting.Qwen -> target.copy(apiKey = value)
+                                is TTSProviderSetting.Groq -> target.copy(apiKey = value)
+                                is TTSProviderSetting.XAI -> target.copy(apiKey = value)
+                                is TTSProviderSetting.MiMo -> target.copy(apiKey = value)
+                                is TTSProviderSetting.ElevenLabs -> target.copy(apiKey = value)
+                                is TTSProviderSetting.SystemTTS -> target
+                            }
+                            "baseUrl" -> when (target) {
+                                is TTSProviderSetting.OpenAI -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.Gemini -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.MiniMax -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.Qwen -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.Groq -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.XAI -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.MiMo -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.ElevenLabs -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.SystemTTS -> target
+                            }
+                            "name" -> target.copyProvider(name = value)
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知字段 $key，可改 apiKey/baseUrl/name"}"""))
+                        }
+                        store.update { st -> st.copy(ttsProviders = st.ttsProviders.map { if (it.id == target.id) updated else it }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"${updated.name}","key":"$key"}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("tts 的 action 支持 list / add / remove / edit"))
+                }
+            }
+            if (target == "asr") {
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
+                val store = getKoin().get<SettingsStore>()
+                return@Tool when (action) {
+                    "list" -> {
+                        val providers = store.settingsFlow.value.asrProviders
+                        val info = if (providers.isEmpty()) "未配置任何 ASR" else providers.joinToString("\n") { p ->
+                            val url = when (p) {
+                                is ASRProviderSetting.OpenAIRealtime -> p.websocketUrl
+                                is ASRProviderSetting.SiliconFlow -> p.baseUrl
+                                is ASRProviderSetting.Volcengine -> p.websocketUrl
+                                is ASRProviderSetting.MiMo -> p.baseUrl
+                            }
+                            "- ${p.name} → $url"
+                        }
+                        listOf(UIMessagePart.Text(info))
+                    }
+                    "add" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val apiKey = params["token"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val baseUrl = params["url"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (name.isBlank()) {
+                            return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"name 不能为空"}"""))
+                        }
+                        val type = params["type"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: "siliconflow"
+                        val provider = when (type) {
+                            "openai_realtime", "openai" -> ASRProviderSetting.OpenAIRealtime(name = name, apiKey = apiKey, websocketUrl = baseUrl.ifBlank { "wss://api.openai.com/v1/realtime?intent=transcription" })
+                            "siliconflow" -> ASRProviderSetting.SiliconFlow(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.siliconflow.cn/v1/audio/transcriptions" })
+                            "volcengine" -> ASRProviderSetting.Volcengine(name = name, apiKey = apiKey, websocketUrl = baseUrl.ifBlank { "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel" })
+                            "mimo" -> ASRProviderSetting.MiMo(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.xiaomimimo.com/v1" })
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知 ASR 类型 $type，可选 openai_realtime/siliconflow/volcengine/mimo"}"""))
+                        }
+                        store.update { st -> st.copy(asrProviders = st.asrProviders.filterNot { it.name == name } + provider) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"$name","type":"$type"}"""))
+                    }
+                    "remove" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val count = store.settingsFlow.value.asrProviders.count { it.name == name }
+                        store.update { st -> st.copy(asrProviders = st.asrProviders.filterNot { it.name == name }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"removed":$count}"""))
+                    }
+                    "edit" -> {
+                        val name = params["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val key = params["key"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val value = params["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val target = store.settingsFlow.value.asrProviders.firstOrNull { it.name == name }
+                            ?: return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"找不到 ASR：$name"}"""))
+                        val updated: ASRProviderSetting = when (key) {
+                            "apiKey" -> when (target) {
+                                is ASRProviderSetting.OpenAIRealtime -> target.copy(apiKey = value)
+                                is ASRProviderSetting.SiliconFlow -> target.copy(apiKey = value)
+                                is ASRProviderSetting.Volcengine -> target.copy(apiKey = value)
+                                is ASRProviderSetting.MiMo -> target.copy(apiKey = value)
+                            }
+                            "baseUrl" -> when (target) {
+                                is ASRProviderSetting.SiliconFlow -> target.copy(baseUrl = value)
+                                is ASRProviderSetting.MiMo -> target.copy(baseUrl = value)
+                                is ASRProviderSetting.OpenAIRealtime -> target.copy(websocketUrl = value)
+                                is ASRProviderSetting.Volcengine -> target.copy(websocketUrl = value)
+                            }
+                            "name" -> target.copyProvider(name = value)
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知字段 $key，可改 apiKey/baseUrl/name"}"""))
+                        }
+                        store.update { st -> st.copy(asrProviders = st.asrProviders.map { if (it.id == target.id) updated else it }) }
+                        listOf(UIMessagePart.Text("""{"success":true,"name":"${updated.name}","key":"$key"}"""))
+                    }
+                    else -> listOf(UIMessagePart.Text("asr 的 action 支持 list / add / remove / edit"))
                 }
             }
             val action = params["action"]?.jsonPrimitive?.contentOrNull ?: "list"
