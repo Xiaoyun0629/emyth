@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Upload
+import me.rerere.hugeicons.HugeIcons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -50,11 +48,11 @@ fun ThemeShareSection(modifier: Modifier = Modifier) {
                 }
             }
         }) {
-            Icon(Icons.Filled.Upload, contentDescription = null)
+            Icon(HugeIcons.Share, contentDescription = null)
             Text("导出主题")
         }
         OutlinedButton(onClick = { showImport = true }) {
-            Icon(Icons.Filled.Download, contentDescription = null)
+            Icon(HugeIcons.FileImport, contentDescription = null)
             Text("导入主题")
         }
     }
