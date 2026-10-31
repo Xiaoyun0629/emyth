@@ -69,11 +69,13 @@ fun createTaskTool(context: Context): Tool = Tool(
             val deadline = System.currentTimeMillis() + deadlineMinutes * 60_000
             val resolvedType = if (type == "photo") "photo" else "text"
             store.update {
-                it.copy(taskSetting = TaskSetting(
+                it.copy(taskSetting = it.taskSetting.copy(
                     content = content,
                     type = resolvedType,
                     deadlineMillis = deadline,
                     punishment = punishment,
+                    submission = "",
+                    submittedAt = 0,
                     status = "pending",
                 ))
             }
