@@ -255,6 +255,10 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.materials)
 
+    // Liquid glass (kyant backdrop) + water glass
+    implementation(libs.backdrop)
+    implementation(libs.liquid)
+
     // koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)

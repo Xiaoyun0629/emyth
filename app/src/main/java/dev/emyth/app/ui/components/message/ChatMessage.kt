@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
 import dev.emyth.app.ui.theme.LocalDarkMode
 import dev.emyth.app.ui.theme.LocalMaterialMode
+import dev.emyth.app.data.datastore.BubbleCornerStyle
 import dev.emyth.app.data.datastore.DisplayMaterialMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -528,6 +529,8 @@ private fun MessagePartsBlock(
                                                         color = displaySettings.userBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.secondaryContainer,
                                                         overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                                         bubbleAlpha = bubbleAlpha,
+                                                        cornerStyle = displaySettings.bubbleCornerStyle,
+                                                        isUser = true,
                                                         onClick = { onUserMessageClick?.invoke() },
                                                     ) {
                                                         MarkdownBlock(
@@ -549,6 +552,8 @@ private fun MessagePartsBlock(
                                             color = displaySettings.userBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.secondaryContainer,
                                             overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                             bubbleAlpha = bubbleAlpha,
+                                            cornerStyle = displaySettings.bubbleCornerStyle,
+                                            isUser = true,
                                             onClick = { onUserMessageClick?.invoke() },
                                         ) {
                                             MarkdownBlock(
@@ -579,6 +584,7 @@ private fun MessagePartsBlock(
                                                         color = displaySettings.assistantBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.surfaceContainerHigh,
                                                         overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                                         bubbleAlpha = bubbleAlpha,
+                                                    cornerStyle = displaySettings.bubbleCornerStyle,
                                                     ) {
                                                         MarkdownBlock(
                                                             content = segment.replaceRegexes(
@@ -612,6 +618,7 @@ private fun MessagePartsBlock(
                                             color = displaySettings.assistantBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.surfaceContainerHigh,
                                             overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                             bubbleAlpha = bubbleAlpha,
+                                        cornerStyle = displaySettings.bubbleCornerStyle,
                                         ) {
                                             MarkdownBlock(
                                                 content = displayText.replaceRegexes(
@@ -840,6 +847,8 @@ private fun BubbleSurface(
     onClick: (() -> Unit)? = null,
     // 本轮原型：用户与助手的普通文本气泡传 true（最终由 LiveBubbleBlurContext 与 final 条件决定）
     enableLiveBubbleBlur: Boolean = false,
+    cornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
+    isUser: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val materialMode = LocalMaterialMode.current
@@ -1048,7 +1057,14 @@ private fun BubbleSurface(
             }
         }
     }
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = when (cornerStyle) {
+        BubbleCornerStyle.ASYMMETRIC -> if (isUser) {
+            RoundedCornerShape(cornerRadius, 4.dp, cornerRadius, cornerRadius)
+        } else {
+            RoundedCornerShape(4.dp, cornerRadius, cornerRadius, cornerRadius)
+        }
+        BubbleCornerStyle.SYMMETRIC -> RoundedCornerShape(cornerRadius)
+    }
     val hasImage = imagePath.isNotBlank() && java.io.File(imagePath).exists()
     if (materialMode == DisplayMaterialMode.GLASS) {
         Box(

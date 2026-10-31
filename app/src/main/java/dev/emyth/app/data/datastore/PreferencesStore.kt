@@ -694,6 +694,13 @@ enum class DisplayMaterialMode {
     GLASS,
 }
 
+enum class BubbleCornerStyle {
+    @SerialName("symmetric")
+    SYMMETRIC,
+    @SerialName("asymmetric")
+    ASYMMETRIC,
+}
+
 @Serializable
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
@@ -771,6 +778,10 @@ data class DisplaySetting(
     val userBubbleImagePath: String = "",
     val assistantBubbleImagePath: String = "",
     val bubbleCornerRadius: Float = 16f,
+    // 气泡圆角样式：对称圆 / 不对称尾巴(op风格，靠屏幕边一侧小角)
+    val bubbleCornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
+    // 气泡头像位置：true=头像在气泡旁边(横排)，false=头像在气泡上方(竖排)
+    val bubbleAvatarBeside: Boolean = false,
     val bubbleImageOverlayEnabled: Boolean = false, // 关=纯图片, 开=图片+主题色遮罩
 )
 
