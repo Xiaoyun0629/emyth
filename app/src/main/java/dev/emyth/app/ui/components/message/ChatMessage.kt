@@ -80,6 +80,7 @@ import kotlin.math.max
 import dev.emyth.app.ui.theme.LocalDarkMode
 import dev.emyth.app.ui.theme.LocalMaterialMode
 import dev.emyth.app.data.datastore.BubbleCornerStyle
+import dev.emyth.app.ui.theme.liquidGlass
 import dev.emyth.app.data.datastore.DisplayMaterialMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -1069,64 +1070,14 @@ private fun BubbleSurface(
         Box(
             modifier = Modifier
                 .animateContentSize()
-                .clip(shape)
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                .border(1.dp, glassBorderColor, shape)
+                .liquidGlass(
+                    enabled = true,
+                    shape = shape,
+                    containerColor = color,
+                    borderWidth = 0.28.dp,
+                )
         ) {
-            if (finalLiveBubbleBlurEnabled) {
-                // 背景图片片段层：仅模糊此子层，文字等前景内容保持清晰。
-                // matchParentSize 只覆盖父 Box 已确定尺寸，不参与父 Box 测量，
-                // 因此气泡宽度仍由文字内容 + padding + 宽度上限决定。
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(liveFragmentModifier)
-                )
-            }
-            if (hasImage) {
-                AsyncImage(
-                    model = imagePath,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize()
-                )
-            }
-            if (finalLiveBubbleBlurEnabled && isDarkTheme) {
-                // 夜间深色识读遮罩：位于模糊背景之上、glass fill 之下，压暗亮背景保证白字可读
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(liveBubbleNightReadabilityModifier)
-                )
-            }
-            if (!hasImage || overlayEnabled) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(glassFillModifier)
-                )
-            }
-            if (finalLiveBubbleBlurEnabled) {
-                // 白色径向渐变高光遮罩：位于 glass fill 上方、玻璃高光下方，受气泡圆角裁剪
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(liveBubbleRadialHighlightModifier)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .then(glassHighlightModifier)
-            )
-            if (finalLiveBubbleBlurEnabled) {
-                // 沿真实圆角贴边的方向性硬高光：位于渲染层外、content 之下；仅左上/顶部可见，向右下透明
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(liveBubbleEdgeHighlightModifier)
-                )
-            }
             Column(modifier = Modifier.padding(8.dp)) { content() }
         }
     } else if (hasImage) {

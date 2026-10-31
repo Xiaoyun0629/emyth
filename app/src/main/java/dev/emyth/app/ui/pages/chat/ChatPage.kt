@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import dev.emyth.app.ui.components.message.LiveBubbleBlurContext
 import dev.emyth.app.ui.components.message.LocalLiveBubbleBlur
 import dev.emyth.app.data.datastore.DisplayMaterialMode
+import dev.emyth.app.ui.theme.LocalLiquidGlassBackdrop
 import dev.emyth.app.ui.theme.LocalMaterialMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +59,8 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -373,6 +376,7 @@ private fun ChatPageContent(
     var bubbleBlurBackgroundOrigin by remember { mutableStateOf(Offset.Unspecified) }
     var bubbleBlurBackgroundSize by remember { mutableStateOf(Size.Unspecified) }
     val bubbleBlurRadiusPx = with(LocalDensity.current) { 5.dp.toPx() }
+    val liquidGlassBackdrop = rememberLayerBackdrop()
 
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
@@ -393,8 +397,10 @@ private fun ChatPageContent(
                         )
                     }
                 }
+                .layerBackdrop(liquidGlassBackdrop)
         ) {
             CompositionLocalProvider(
+                LocalLiquidGlassBackdrop provides liquidGlassBackdrop,
                 LocalLiveBubbleBlur provides LiveBubbleBlurContext(
                     imageBitmap = if (enableLiveBubbleBlur) bubbleBlurBackgroundBitmap else null,
                     backgroundOriginInWindow = bubbleBlurBackgroundOrigin,
