@@ -328,7 +328,7 @@ fun ChatMessage(
                         compact = true,
                     )
                 }
-                Box(modifier = Modifier.weight(1f)) {
+                Box(modifier = Modifier.weight(1f, fill = false)) {
                     ProvideTextStyle(textStyle) {
                         bubbleContent()
                     }
