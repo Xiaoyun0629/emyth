@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
+import dev.emyth.app.data.datastore.BubbleCornerStyle
 import dev.emyth.app.data.datastore.DisplaySetting
 import dev.emyth.app.ui.components.nav.BackButton
 import dev.emyth.app.ui.components.ui.CardGroup
@@ -289,6 +290,34 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                                 Text(text = "${displaySetting.bubbleCornerRadius.toInt()}")
                             }
                         }
+                    )
+                    item(
+                        headlineContent = { Text("气泡圆角样式") },
+                        supportingContent = { Text("开=不对称尾巴(靠屏幕边一侧小角), 关=对称圆角") },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.bubbleCornerStyle == BubbleCornerStyle.ASYMMETRIC,
+                                onCheckedChange = {
+                                    updateDisplaySetting(
+                                        displaySetting.copy(
+                                            bubbleCornerStyle = if (it) BubbleCornerStyle.ASYMMETRIC else BubbleCornerStyle.SYMMETRIC
+                                        )
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text("气泡头像位置") },
+                        supportingContent = { Text("开=头像在气泡旁边, 关=头像在气泡上方") },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.bubbleAvatarBeside,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(bubbleAvatarBeside = it))
+                                }
+                            )
+                        },
                     )
                     item(
                         headlineContent = { Text("背景图叠加主题色遮罩") },

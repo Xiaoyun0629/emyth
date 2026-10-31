@@ -288,29 +288,9 @@ fun ChatMessage(
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        if (!message.parts.isEmptyUIMessage()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-            ) {
-                ChatMessageAssistantAvatar(
-                    message = message,
-                    model = model,
-                    assistant = assistant,
-                    loading = loading,
-                    modifier = Modifier.weight(1f)
-                )
-                ChatMessageUserAvatar(
-                    message = message,
-                    avatar = settings.userAvatar,
-                    nickname = settings.userNickname,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-        ProvideTextStyle(textStyle) {
+        val avatarBeside = settings.bubbleAvatarBeside
+        val hasParts = !message.parts.isEmptyUIMessage()
+        val bubbleContent: @Composable () -> Unit = {
             MessagePartsBlock(
                 assistant = assistant,
                 role = message.role,
@@ -322,7 +302,6 @@ fun ChatMessage(
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
             )
- 
             message.translation?.let { translation ->
                 CollapsibleTranslationText(
                     content = translation,
@@ -330,7 +309,62 @@ fun ChatMessage(
                 )
             }
         }
- 
+        if (avatarBeside && hasParts) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = if (message.role == MessageRole.USER) {
+                    Arrangement.spacedBy(8.dp, Alignment.End)
+                } else {
+                    Arrangement.spacedBy(8.dp, Alignment.Start)
+                },
+            ) {
+                if (message.role == MessageRole.ASSISTANT) {
+                    ChatMessageAssistantAvatar(
+                        message = message,
+                        model = model,
+                        assistant = assistant,
+                        loading = loading,
+                    )
+                }
+                ProvideTextStyle(textStyle) {
+                    bubbleContent()
+                }
+                if (message.role == MessageRole.USER) {
+                    ChatMessageUserAvatar(
+                        message = message,
+                        avatar = settings.userAvatar,
+                        nickname = settings.userNickname,
+                    )
+                }
+            }
+        } else {
+            if (hasParts) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                ) {
+                    ChatMessageAssistantAvatar(
+                        message = message,
+                        model = model,
+                        assistant = assistant,
+                        loading = loading,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ChatMessageUserAvatar(
+                        message = message,
+                        avatar = settings.userAvatar,
+                        nickname = settings.userNickname,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            ProvideTextStyle(textStyle) {
+                bubbleContent()
+            }
+        }
         val showActions = if (lastMessage) {
             !loading
         } else {
