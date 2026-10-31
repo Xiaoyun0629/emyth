@@ -49,6 +49,7 @@ import java.io.File
 import dev.emyth.app.data.datastore.BubbleCornerStyle
 import dev.emyth.app.data.datastore.DisplaySetting
 import dev.emyth.app.ui.components.nav.BackButton
+import dev.emyth.app.ui.components.themeshare.ThemeShareSection
 import dev.emyth.app.ui.components.ui.CardGroup
 import dev.emyth.app.ui.theme.CustomColors
 import dev.emyth.app.utils.plus
@@ -319,6 +320,18 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                }
+            }
+
+            // 主题分享
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text("主题分享") },
+                ) {
+                    item {
+                        ThemeShareSection(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    }
                 }
             }
 
