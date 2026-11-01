@@ -18,6 +18,8 @@ import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.repository.ConversationRepository
 import dev.emyth.app.data.sync.importer.ChatboxImporter
 import dev.emyth.app.data.sync.importer.CherryStudioProviderImporter
+import dev.emyth.app.data.sync.importer.KelivoImporter
+import dev.emyth.app.data.sync.importer.RikkahubImporter
 import dev.emyth.app.data.sync.webdav.WebDavBackupItem
 import dev.emyth.app.data.sync.webdav.WebDavSync
 import dev.emyth.app.data.sync.S3BackupItem
@@ -163,6 +165,56 @@ class BackupVM(
         )
     }
 
+    suspend fun restoreFromRikkahub(file: File): ImportRestoreResult {
+        val payload = RikkahubImporter.import(
+            file = file,
+            assistantId = settings.value.assistantId,
+        )
+        var importedConversations = 0
+        var skippedExistingConversations = 0
+        payload.conversations.forEach { conversation ->
+            if (conversationRepository.existsConversationById(conversation.id)) {
+                skippedExistingConversations++
+            } else {
+                conversationRepository.insertConversation(conversation)
+                importedConversations++
+            }
+        }
+        Log.i(
+            TAG,
+            "restoreFromRikkahub: import $importedConversations conversations, skip $skippedExistingConversations existing",
+        )
+        return ImportRestoreResult(
+            importedConversations = importedConversations,
+            skippedExistingConversations = skippedExistingConversations,
+        )
+    }
+
+    suspend fun restoreFromKelivo(file: File): ImportRestoreResult {
+        val payload = KelivoImporter.import(
+            file = file,
+            assistantId = settings.value.assistantId,
+        )
+        var importedConversations = 0
+        var skippedExistingConversations = 0
+        payload.conversations.forEach { conversation ->
+            if (conversationRepository.existsConversationById(conversation.id)) {
+                skippedExistingConversations++
+            } else {
+                conversationRepository.insertConversation(conversation)
+                importedConversations++
+            }
+        }
+        Log.i(
+            TAG,
+            "restoreFromKelivo: import $importedConversations conversations, skip $skippedExistingConversations existing",
+        )
+        return ImportRestoreResult(
+            importedConversations = importedConversations,
+            skippedExistingConversations = skippedExistingConversations,
+        )
+    }
+
     // S3 Backup methods
     fun loadS3BackupFileItems() {
         viewModelScope.launch {
@@ -215,4 +267,10 @@ data class ChatboxRestoreResult(
     val skippedExistingConversations: Int,
     val skippedImageParts: Int,
     val skippedEmptyMessages: Int,
+)
+
+
+data class ImportRestoreResult(
+    val importedConversations: Int,
+    val skippedExistingConversations: Int,
 )

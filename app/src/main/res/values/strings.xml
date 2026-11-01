@@ -190,6 +190,10 @@
   <string name="backup_page_import_export">Local</string>
   <string name="backup_page_import_from_chatbox">Import from ChatBox</string>
   <string name="backup_page_import_from_cherry_studio">Import from Cherry Studio</string>
+  <string name="backup_page_import_from_rikkahub">Import from RikkaHub</string>
+  <string name="backup_page_import_rikkahub_desc">Import chat history from a RikkaHub backup</string>
+  <string name="backup_page_import_from_kelivo">Import from Kelivo</string>
+  <string name="backup_page_import_kelivo_desc">Import chat history from a Kelivo backup</string>
   <string name="backup_page_import_from_other_app">Import from other app</string>
   <string name="backup_page_importing">Importing...</string>
   <string name="backup_page_loading_failed">Failed to load backup files: %s</string>

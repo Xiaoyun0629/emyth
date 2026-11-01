@@ -155,6 +155,42 @@ fun ImportExportTab(
                             // 清理临时文件
                             tempFile.delete()
                         }
+
+                        "rikkahub" -> {
+                            // RikkaHub导入：处理zip文件
+                            val tempFile =
+                                File(context.cacheDir, "temp_rikkahub_${System.currentTimeMillis()}.zip")
+
+                            context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+                                FileOutputStream(tempFile).use { outputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+
+                            // 从RikkaHub备份恢复
+                            vm.restoreFromRikkahub(tempFile)
+
+                            // 清理临时文件
+                            tempFile.delete()
+                        }
+
+                        "kelivo" -> {
+                            // Kelivo导入：处理zip文件
+                            val tempFile =
+                                File(context.cacheDir, "temp_kelivo_${System.currentTimeMillis()}.zip")
+
+                            context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+                                FileOutputStream(tempFile).use { outputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+
+                            // 从Kelivo备份恢复
+                            vm.restoreFromKelivo(tempFile)
+
+                            // 清理临时文件
+                            tempFile.delete()
+                        }
                     }
 
                     toaster.show(
@@ -279,6 +315,43 @@ fun ImportExportTab(
                     supportingContent = { Text(stringResource(R.string.backup_page_import_cherry_studio_desc)) },
                     leadingContent = {
                         if (isRestoring && importType == "cherry") {
+                            CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(HugeIcons.FileImport, null)
+                        }
+                    },
+                )
+
+
+                item(
+                    onClick = if (!isRestoring) {
+                        {
+                            importType = "rikkahub"
+                            openDocumentLauncher.launch(arrayOf("application/zip"))
+                        }
+                    } else null,
+                    headlineContent = { Text(stringResource(R.string.backup_page_import_from_rikkahub)) },
+                    supportingContent = { Text(stringResource(R.string.backup_page_import_rikkahub_desc)) },
+                    leadingContent = {
+                        if (isRestoring && importType == "rikkahub") {
+                            CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(HugeIcons.FileImport, null)
+                        }
+                    },
+                )
+
+                item(
+                    onClick = if (!isRestoring) {
+                        {
+                            importType = "kelivo"
+                            openDocumentLauncher.launch(arrayOf("application/zip"))
+                        }
+                    } else null,
+                    headlineContent = { Text(stringResource(R.string.backup_page_import_from_kelivo)) },
+                    supportingContent = { Text(stringResource(R.string.backup_page_import_kelivo_desc)) },
+                    leadingContent = {
+                        if (isRestoring && importType == "kelivo") {
                             CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
                             Icon(HugeIcons.FileImport, null)

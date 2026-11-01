@@ -187,6 +187,10 @@
   <string name="backup_page_import_export">本地</string>
   <string name="backup_page_import_from_chatbox">从ChatBox导入</string>
   <string name="backup_page_import_from_cherry_studio">从Cherry Studio导入</string>
+  <string name="backup_page_import_from_rikkahub">从RikkaHub导入</string>
+  <string name="backup_page_import_rikkahub_desc">导入RikkaHub备份的聊天记录</string>
+  <string name="backup_page_import_from_kelivo">从Kelivo导入</string>
+  <string name="backup_page_import_kelivo_desc">导入Kelivo备份的聊天记录</string>
   <string name="backup_page_import_from_other_app">从其他APP导入</string>
   <string name="backup_page_importing">正在恢复...</string>
   <string name="backup_page_loading_failed">加载备份文件失败: %s</string>
