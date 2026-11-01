@@ -23,7 +23,6 @@ object ThemeShareRepository {
             assistantBubbleColor = ds.assistantBubbleColor,
             bubbleCornerRadius = ds.bubbleCornerRadius,
             bubbleCornerStyle = ds.bubbleCornerStyle.name.lowercase(),
-            bubbleImageOverlayEnabled = ds.bubbleImageOverlayEnabled,
             chatBubbleTransparency = ds.chatBubbleTransparency,
             chatTextColor = ds.chatTextColor,
             globalTextColor = ds.globalTextColor,
@@ -37,10 +36,6 @@ object ThemeShareRepository {
             primaryColor = ds.primaryColor,
             inputFieldColor = ds.inputFieldColor,
             wallpaperBase64 = assistant.background?.let { ThemeShareCodec.fileToBase64(it) },
-            userBubbleImageBase64 = ds.userBubbleImagePath.takeIf { it.isNotBlank() }?.let { ThemeShareCodec.fileToBase64(it) },
-            assistantBubbleImageBase64 = ds.assistantBubbleImagePath.takeIf { it.isNotBlank() }?.let { ThemeShareCodec.fileToBase64(it) },
-            userBubbleImageParams = ds.userBubbleImageParams,
-            assistantBubbleImageParams = ds.assistantBubbleImageParams,
         )
     }
 
@@ -48,8 +43,6 @@ object ThemeShareRepository {
         val store = getKoin().get<SettingsStore>()
         val dir = File(context.filesDir, "themeshare").apply { mkdirs() }
         val wallpaperPath = data.wallpaperBase64?.let { saveImage(dir, "wallpaper", it) }
-        val userBubblePath = data.userBubbleImageBase64?.let { saveImage(dir, "user_bubble", it) }
-        val aiBubblePath = data.assistantBubbleImageBase64?.let { saveImage(dir, "ai_bubble", it) }
 
         store.update { settings ->
             settings.copy(
@@ -59,7 +52,6 @@ object ThemeShareRepository {
                     assistantBubbleColor = data.assistantBubbleColor,
                     bubbleCornerRadius = data.bubbleCornerRadius,
                     bubbleCornerStyle = enumValueOf(data.bubbleCornerStyle, BubbleCornerStyle.SYMMETRIC),
-                    bubbleImageOverlayEnabled = data.bubbleImageOverlayEnabled,
                     chatBubbleTransparency = data.chatBubbleTransparency,
                     chatTextColor = data.chatTextColor,
                     globalTextColor = data.globalTextColor,
@@ -72,10 +64,6 @@ object ThemeShareRepository {
                     showModelName = data.showModelName,
                     primaryColor = data.primaryColor,
                     inputFieldColor = data.inputFieldColor,
-                    userBubbleImagePath = userBubblePath ?: settings.displaySetting.userBubbleImagePath,
-                    assistantBubbleImagePath = aiBubblePath ?: settings.displaySetting.assistantBubbleImagePath,
-                    userBubbleImageParams = data.userBubbleImageParams,
-                    assistantBubbleImageParams = data.assistantBubbleImageParams,
                 ),
                 assistants = settings.assistants.map { a ->
                     if (a.id == settings.assistantId && wallpaperPath != null) a.copy(background = wallpaperPath) else a

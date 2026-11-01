@@ -80,7 +80,6 @@ import kotlin.math.max
 import dev.emyth.app.ui.theme.LocalDarkMode
 import dev.emyth.app.ui.theme.LocalMaterialMode
 import dev.emyth.app.data.datastore.BubbleCornerStyle
-import dev.emyth.app.data.datastore.BubbleImageStyleParams
 import dev.emyth.app.ui.theme.liquidGlass
 import dev.emyth.app.data.datastore.DisplayMaterialMode
 import androidx.compose.ui.graphics.Color
@@ -525,14 +524,11 @@ private fun MessagePartsBlock(
                                             bubbleSegments.fastForEachIndexed { segIndex, segment ->
                                                 key(segIndex) {
                                                     BubbleSurface(
-                                                        imagePath = displaySettings.userBubbleImagePath,
                                                         cornerRadius = displaySettings.bubbleCornerRadius.dp,
                                                         color = displaySettings.userBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.secondaryContainer,
-                                                        overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                                         bubbleAlpha = bubbleAlpha,
                                                         cornerStyle = displaySettings.bubbleCornerStyle,
                                                         isUser = true,
-                                                        imageParams = displaySettings.userBubbleImageParams,
                                                         onClick = { onUserMessageClick?.invoke() },
                                                     ) {
                                                         MarkdownBlock(
@@ -549,14 +545,11 @@ private fun MessagePartsBlock(
                                         }
                                     } else {
                                         BubbleSurface(
-                                            imagePath = displaySettings.userBubbleImagePath,
                                             cornerRadius = displaySettings.bubbleCornerRadius.dp,
                                             color = displaySettings.userBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.secondaryContainer,
-                                            overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                             bubbleAlpha = bubbleAlpha,
                                             cornerStyle = displaySettings.bubbleCornerStyle,
                                             isUser = true,
-                                            imageParams = displaySettings.userBubbleImageParams,
                                             onClick = { onUserMessageClick?.invoke() },
                                         ) {
                                             MarkdownBlock(
@@ -582,13 +575,10 @@ private fun MessagePartsBlock(
                                             key(segIndex) {
                                                 if (displaySettings.showAssistantBubble) {
                                                     BubbleSurface(
-                                                        imagePath = displaySettings.assistantBubbleImagePath,
                                                         cornerRadius = displaySettings.bubbleCornerRadius.dp,
                                                         color = displaySettings.assistantBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                        overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                                         bubbleAlpha = bubbleAlpha,
                                                     cornerStyle = displaySettings.bubbleCornerStyle,
-                                                    imageParams = displaySettings.assistantBubbleImageParams,
                                                     ) {
                                                         MarkdownBlock(
                                                             content = segment.replaceRegexes(
@@ -617,13 +607,10 @@ private fun MessagePartsBlock(
                                 } else {
                                     if (displaySettings.showAssistantBubble) {
                                         BubbleSurface(
-                                            imagePath = displaySettings.assistantBubbleImagePath,
                                             cornerRadius = displaySettings.bubbleCornerRadius.dp,
                                             color = displaySettings.assistantBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            overlayEnabled = displaySettings.bubbleImageOverlayEnabled,
                                             bubbleAlpha = bubbleAlpha,
                                         cornerStyle = displaySettings.bubbleCornerStyle,
-                                        imageParams = displaySettings.assistantBubbleImageParams,
                                         ) {
                                             MarkdownBlock(
                                                 content = displayText.replaceRegexes(
@@ -844,17 +831,14 @@ private fun MessagePartsBlock(
  
 @Composable
 private fun BubbleSurface(
-    imagePath: String,
     cornerRadius: Dp,
     color: Color,
-    overlayEnabled: Boolean,
     bubbleAlpha: Float,
     onClick: (() -> Unit)? = null,
     // 本轮原型：用户与助手的普通文本气泡传 true（最终由 LiveBubbleBlurContext 与 final 条件决定）
     enableLiveBubbleBlur: Boolean = false,
     cornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
     isUser: Boolean = false,
-    imageParams: BubbleImageStyleParams = BubbleImageStyleParams(),
     content: @Composable () -> Unit,
 ) {
     val materialMode = LocalMaterialMode.current
@@ -1071,20 +1055,6 @@ private fun BubbleSurface(
         }
         BubbleCornerStyle.SYMMETRIC -> RoundedCornerShape(cornerRadius)
     }
-    val hasImage = imagePath.isNotBlank() && java.io.File(imagePath).exists()
-    val bubbleImageStyle = BubbleImageStyleConfig(
-        imageUri = imagePath,
-        cropLeftRatio = imageParams.cropLeftRatio,
-        cropTopRatio = imageParams.cropTopRatio,
-        cropRightRatio = imageParams.cropRightRatio,
-        cropBottomRatio = imageParams.cropBottomRatio,
-        repeatXStartRatio = imageParams.repeatXStartRatio,
-        repeatXEndRatio = imageParams.repeatXEndRatio,
-        repeatYStartRatio = imageParams.repeatYStartRatio,
-        repeatYEndRatio = imageParams.repeatYEndRatio,
-        imageScale = imageParams.imageScale,
-        renderMode = imageParams.renderMode,
-    )
     if (materialMode == DisplayMaterialMode.TRANSLUCENT) {
         // 磨砂玻璃 = kyant backdrop 液态玻璃
         Box(
@@ -1116,14 +1086,6 @@ private fun BubbleSurface(
                         .then(liveFragmentModifier)
                 )
             }
-            if (hasImage) {
-                BubbleImageBackgroundSurface(
-                    imageStyle = bubbleImageStyle,
-                    shape = shape,
-                    modifier = Modifier.matchParentSize(),
-                    contentPadding = PaddingValues(0.dp),
-                ) {}
-            }
             if (finalLiveBubbleBlurEnabled && isDarkTheme) {
                 Box(
                     modifier = Modifier
@@ -1131,13 +1093,11 @@ private fun BubbleSurface(
                         .then(liveBubbleNightReadabilityModifier)
                 )
             }
-            if (!hasImage || overlayEnabled) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(glassFillModifier)
-                )
-            }
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .then(glassFillModifier)
+            )
             if (finalLiveBubbleBlurEnabled) {
                 Box(
                     modifier = Modifier
@@ -1158,24 +1118,6 @@ private fun BubbleSurface(
                 )
             }
             Column(modifier = Modifier.padding(8.dp)) { content() }
-        }
-    } else if (hasImage) {
-        BubbleImageBackgroundSurface(
-            imageStyle = bubbleImageStyle,
-            shape = shape,
-            modifier = Modifier
-                .animateContentSize()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-            contentPadding = PaddingValues(8.dp),
-        ) {
-            if (overlayEnabled) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(color.copy(alpha = effectiveAlpha))
-                )
-            }
-            content()
         }
     } else {
         Surface(

@@ -47,12 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 import dev.emyth.app.data.datastore.BubbleCornerStyle
-import dev.emyth.app.data.datastore.BubbleImageStyleParams
 import dev.emyth.app.data.datastore.DisplaySetting
 import dev.emyth.app.ui.components.nav.BackButton
 import dev.emyth.app.ui.components.themeshare.ThemeShareSection
 import dev.emyth.app.ui.components.ui.CardGroup
-import dev.emyth.app.ui.components.ui.CardGroupScope
 import dev.emyth.app.ui.theme.CustomColors
 import dev.emyth.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -117,27 +115,6 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                 destFile.outputStream().use { output -> input.copyTo(output) }
             }
             updateDisplaySetting(displaySetting.copy(aiAvatarFramePath = destFile.absolutePath))
-        }
-    }
-
-    // Bubble background picker launcher
-    val bubbleBgDir = remember { File(context.filesDir, "bubble_backgrounds").apply { mkdirs() } }
-    val userBubbleBgPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            val destFile = File(bubbleBgDir, "user_bubble_${System.currentTimeMillis()}.png")
-            context.contentResolver.openInputStream(it)?.use { input ->
-                destFile.outputStream().use { output -> input.copyTo(output) }
-            }
-            updateDisplaySetting(displaySetting.copy(userBubbleImagePath = destFile.absolutePath))
-        }
-    }
-    val aiBubbleBgPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            val destFile = File(bubbleBgDir, "ai_bubble_${System.currentTimeMillis()}.png")
-            context.contentResolver.openInputStream(it)?.use { input ->
-                destFile.outputStream().use { output -> input.copyTo(output) }
-            }
-            updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = destFile.absolutePath))
         }
     }
 
@@ -229,52 +206,6 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                     title = { Text("气泡背景") },
                 ) {
                     item(
-                        headlineContent = { Text("用户气泡背景图") },
-                        supportingContent = {
-                            Text(
-                                if (displaySetting.userBubbleImagePath.isNotBlank() && File(displaySetting.userBubbleImagePath).exists())
-                                    "当前背景: ${File(displaySetting.userBubbleImagePath).name}"
-                                else "选择一张图片作为用户气泡背景"
-                            )
-                        },
-                        trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (displaySetting.userBubbleImagePath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        File(displaySetting.userBubbleImagePath).delete()
-                                        updateDisplaySetting(displaySetting.copy(userBubbleImagePath = ""))
-                                    }) { Text("清除") }
-                                }
-                                TextButton(onClick = {
-                                    userBubbleBgPicker.launch(arrayOf("image/*"))
-                                }) { Text("选择图片") }
-                            }
-                        },
-                    )
-                    item(
-                        headlineContent = { Text("AI气泡背景图") },
-                        supportingContent = {
-                            Text(
-                                if (displaySetting.assistantBubbleImagePath.isNotBlank() && File(displaySetting.assistantBubbleImagePath).exists())
-                                    "当前背景: ${File(displaySetting.assistantBubbleImagePath).name}"
-                                else "选择一张图片作为AI气泡背景"
-                            )
-                        },
-                        trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (displaySetting.assistantBubbleImagePath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        File(displaySetting.assistantBubbleImagePath).delete()
-                                        updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = ""))
-                                    }) { Text("清除") }
-                                }
-                                TextButton(onClick = {
-                                    aiBubbleBgPicker.launch(arrayOf("image/*"))
-                                }) { Text("选择图片") }
-                            }
-                        },
-                    )
-                    item(
                         headlineContent = { Text("气泡圆角(0=直角)") },
                         supportingContent = {
                             Row(
@@ -309,37 +240,6 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
                                 }
                             )
                         },
-                    )
-                    item(
-                        headlineContent = { Text("背景图叠加主题色遮罩") },
-                        supportingContent = { Text("关=纯图片, 开=图片+主题色遮罩") },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.bubbleImageOverlayEnabled,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(bubbleImageOverlayEnabled = it))
-                                }
-                            )
-                        },
-                    )
-                }
-            }
-
-            // 气泡九宫格裁剪参数
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("气泡九宫格裁剪") },
-                ) {
-                    item(headlineContent = { Text("用户气泡参数") })
-                    bubbleImageParamsEditor(
-                        params = displaySetting.userBubbleImageParams,
-                        onParamsChange = { updateDisplaySetting(displaySetting.copy(userBubbleImageParams = it)) },
-                    )
-                    item(headlineContent = { Text("AI气泡参数") })
-                    bubbleImageParamsEditor(
-                        params = displaySetting.assistantBubbleImageParams,
-                        onParamsChange = { updateDisplaySetting(displaySetting.copy(assistantBubbleImageParams = it)) },
                     )
                 }
             }
@@ -600,46 +500,4 @@ fun SettingDisplayIllustrationPage(vm: SettingVM = koinViewModel()) {
             }
         }
     }
-}
-
-@Composable
-private fun ParamSliderRow(
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    format: (Float) -> String = { "${(it * 100).toInt()}" },
-    onChange: (Float) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Slider(value = value, onValueChange = onChange, valueRange = valueRange, modifier = Modifier.weight(1f))
-        Text(text = format(value))
-    }
-}
-
-private fun CardGroupScope.bubbleImageParamsEditor(
-    params: BubbleImageStyleParams,
-    onParamsChange: (BubbleImageStyleParams) -> Unit,
-) {
-    item(
-        headlineContent = { Text("铺图模式") },
-        supportingContent = { Text("关=九宫格平铺(重复中间区), 开=九宫格拉伸") },
-        trailingContent = {
-            Switch(
-                checked = params.renderMode == "nine_patch",
-                onCheckedChange = { onParamsChange(params.copy(renderMode = if (it) "nine_patch" else "tiled_nine_slice")) },
-            )
-        },
-    )
-    item(headlineContent = { Text("裁剪-左") }, supportingContent = { ParamSliderRow(params.cropLeftRatio, 0f..0.45f) { onParamsChange(params.copy(cropLeftRatio = it)) } })
-    item(headlineContent = { Text("裁剪-上") }, supportingContent = { ParamSliderRow(params.cropTopRatio, 0f..0.45f) { onParamsChange(params.copy(cropTopRatio = it)) } })
-    item(headlineContent = { Text("裁剪-右") }, supportingContent = { ParamSliderRow(params.cropRightRatio, 0f..0.45f) { onParamsChange(params.copy(cropRightRatio = it)) } })
-    item(headlineContent = { Text("裁剪-下") }, supportingContent = { ParamSliderRow(params.cropBottomRatio, 0f..0.45f) { onParamsChange(params.copy(cropBottomRatio = it)) } })
-    item(headlineContent = { Text("重复区-X起点") }, supportingContent = { ParamSliderRow(params.repeatXStartRatio, 0.05f..0.9f) { onParamsChange(params.copy(repeatXStartRatio = it)) } })
-    item(headlineContent = { Text("重复区-X终点") }, supportingContent = { ParamSliderRow(params.repeatXEndRatio, 0.05f..0.95f) { onParamsChange(params.copy(repeatXEndRatio = it)) } })
-    item(headlineContent = { Text("重复区-Y起点") }, supportingContent = { ParamSliderRow(params.repeatYStartRatio, 0.05f..0.9f) { onParamsChange(params.copy(repeatYStartRatio = it)) } })
-    item(headlineContent = { Text("重复区-Y终点") }, supportingContent = { ParamSliderRow(params.repeatYEndRatio, 0.05f..0.95f) { onParamsChange(params.copy(repeatYEndRatio = it)) } })
-    item(headlineContent = { Text("缩放") }, supportingContent = { ParamSliderRow(params.imageScale, 0.2f..3f, format = { "%.2f".format(it) }) { onParamsChange(params.copy(imageScale = it)) } })
 }

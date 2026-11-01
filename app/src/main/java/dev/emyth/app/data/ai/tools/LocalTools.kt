@@ -761,8 +761,6 @@ class LocalTools(
                             "输入框背景 inputBackgroundPath = ${d.inputBackgroundPath}",
                             "用户头像框 userAvatarFramePath = ${d.userAvatarFramePath}",
                             "AI头像框 aiAvatarFramePath = ${d.aiAvatarFramePath}",
-                            "用户气泡背景图 userBubbleImagePath = ${d.userBubbleImagePath}",
-                            "AI气泡背景图 assistantBubbleImagePath = ${d.assistantBubbleImagePath}",
                             "侧边栏背景 drawerBackgroundPath = ${d.drawerBackgroundPath}",
                         ).joinToString("\n")
                         listOf(UIMessagePart.Text(info))
@@ -777,8 +775,6 @@ class LocalTools(
                             "inputBackgroundPath" -> d.copy(inputBackgroundPath = value)
                             "userAvatarFramePath" -> d.copy(userAvatarFramePath = value)
                             "aiAvatarFramePath" -> d.copy(aiAvatarFramePath = value)
-                            "userBubbleImagePath" -> d.copy(userBubbleImagePath = value)
-                            "assistantBubbleImagePath" -> d.copy(assistantBubbleImagePath = value)
                             "drawerBackgroundPath" -> d.copy(drawerBackgroundPath = value)
                             else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知字符串字段 $key，用 action=list 查看可选值"}"""))
                         }
