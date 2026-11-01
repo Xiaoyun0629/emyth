@@ -9,7 +9,12 @@ package dev.emyth.app.data.sync.importer
 import android.database.sqlite.SQLiteDatabase
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
@@ -35,16 +40,19 @@ import kotlin.uuid.Uuid
 /**
  * 从 Kelivo 的备份 zip 导入聊天记录 + 供应商 + 助手（头像/壁纸）+ 记忆。
  *
- * Kelivo 备份（kelivo-backup v3）：manifest.json + settings.json + database/kelivo.db（drift SQLite）+ avatars/images 等目录。
- * - provider_rows：供应商（payload JSON，providerType=openai/claude/google，含 apiKey/baseUrl）
- * - assistant_rows：助手（payload JSON，含 name/avatar(String?)/systemPrompt/background）
- * - assistant_memory_rows / memory_entry_rows：记忆
- * - conversation_rows / message_rows / message_part_rows：聊天记录
+ * Kelivo 新版备份（kelivo-backup v2/v3）：
+ * - `database/kelivo.db`（drift SQLite）：只存聊天记录（conversation_rows / message_rows / message_part_rows）
+ * - `settings.json`：业务实体（助手/供应商/记忆/世界书/MCP 等），字段名带 `_v1` 后缀，值为 JSON 字符串：
+ *   - `assistants_v1`：助手列表 JSON 字符串
+ *   - `provider_configs_v1`：{providerId: config} JSON 字符串
+ *   - `assistant_memories_v1`：记忆列表 JSON 字符串
+ * - `avatars/ images/ upload/`：图片等文件，avatar/background 用绝对路径引用
  */
 object KelivoImporter {
 
     fun import(file: File, assistantId: Uuid): KelivoImportPayload {
         val dbFile = extractEntry(file) { it.endsWith("kelivo.db") }
+        val settingsJson = extractEntryText(file) { it.endsWith("settings.json") }
         val imageFiles = extractImages(file)
 
         val db = SQLiteDatabase.openDatabase(
@@ -53,11 +61,12 @@ object KelivoImporter {
             SQLiteDatabase.OPEN_READONLY,
         )
         return try {
+            val (providers, assistants, memories) = parseSettings(settingsJson, imageFiles)
             KelivoImportPayload(
                 conversations = importConversations(db, assistantId),
-                providers = importProviders(db),
-                assistants = importAssistants(db, imageFiles),
-                memories = importMemories(db),
+                providers = providers,
+                assistants = assistants,
+                memories = memories,
             )
         } finally {
             db.close()
@@ -66,79 +75,87 @@ object KelivoImporter {
         }
     }
 
-    // ---- 供应商 ----
+    // ---- settings.json（业务实体） ----
 
-    private fun importProviders(db: SQLiteDatabase): List<ProviderSetting> {
+    private fun parseSettings(
+        settingsJson: String?,
+        imageFiles: Map<String, File>,
+    ): Triple<List<ProviderSetting>, List<Assistant>, List<String>> {
+        if (settingsJson.isNullOrBlank()) {
+            return Triple(emptyList(), emptyList(), emptyList())
+        }
+        val root = runCatching { JsonInstant.parseToJsonElement(settingsJson).jsonObject }
+            .getOrNull() ?: return Triple(emptyList(), emptyList(), emptyList())
+
+        val providers = parseProviders(nestedJson(root["provider_configs_v1"]))
+        val assistants = parseAssistants(nestedJson(root["assistants_v1"]), imageFiles)
+        val memories = parseMemories(nestedJson(root["assistant_memories_v1"]))
+        return Triple(providers, assistants, memories)
+    }
+
+    /** Kelivo 的 `_v1` 字段值是 JSON 字符串，这里解析成 JsonElement。 */
+    private fun nestedJson(element: JsonElement?): JsonElement? {
+        val primitive = element as? JsonPrimitive ?: return element
+        val str = primitive.contentOrNull ?: return element
+        return runCatching { JsonInstant.parseToJsonElement(str) }.getOrElse { element }
+    }
+
+    private fun parseProviders(element: kotlinx.serialization.json.JsonElement?): List<ProviderSetting> {
+        val obj = element as? JsonObject ?: return emptyList()
         val providers = mutableListOf<ProviderSetting>()
-        db.rawQuery("SELECT payload FROM provider_rows", null).use { cursor ->
-            while (cursor.moveToNext()) {
-                val payload = cursor.getString(0)
-                val obj = runCatching { JsonInstant.parseToJsonElement(payload).jsonObject }.getOrNull() ?: continue
-                val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: continue
-                val apiKey = obj["apiKey"]?.jsonPrimitive?.contentOrNull ?: ""
-                val baseUrl = obj["baseUrl"]?.jsonPrimitive?.contentOrNull ?: ""
-                val type = obj["providerType"]?.jsonPrimitive?.contentOrNull ?: "openai"
-                if (apiKey.isBlank() && baseUrl.isBlank()) continue
-                val provider = when (type) {
-                    "claude", "anthropic" -> ProviderSetting.Claude(
-                        name = name,
-                        baseUrl = baseUrl,
-                        apiKey = apiKey,
-                    )
-                    "google", "gemini" -> ProviderSetting.Google(
-                        name = name,
-                        baseUrl = baseUrl,
-                        apiKey = apiKey,
-                    )
-                    else -> ProviderSetting.OpenAI(
-                        name = name,
-                        baseUrl = baseUrl,
-                        apiKey = apiKey,
-                    )
-                }
-                providers.add(provider)
+        obj.forEach { (id, value) ->
+            val cfg = value as? JsonObject ?: return@forEach
+            val name = cfg["name"]?.jsonPrimitive?.contentOrNull ?: id
+            val apiKey = cfg["apiKey"]?.jsonPrimitive?.contentOrNull ?: ""
+            val baseUrl = cfg["baseUrl"]?.jsonPrimitive?.contentOrNull ?: ""
+            val type = cfg["providerType"]?.jsonPrimitive?.contentOrNull ?: "openai"
+            if (apiKey.isBlank() && baseUrl.isBlank()) return@forEach
+            val provider = when (type) {
+                "claude", "anthropic" -> ProviderSetting.Claude(name = name, baseUrl = baseUrl, apiKey = apiKey)
+                "google", "gemini" -> ProviderSetting.Google(name = name, baseUrl = baseUrl, apiKey = apiKey)
+                else -> ProviderSetting.OpenAI(name = name, baseUrl = baseUrl, apiKey = apiKey)
             }
+            providers.add(provider)
         }
         return providers
     }
 
-    // ---- 助手（头像/壁纸） ----
-
-    private fun importAssistants(db: SQLiteDatabase, imageFiles: Map<String, File>): List<Assistant> {
+    private fun parseAssistants(element: kotlinx.serialization.json.JsonElement?, imageFiles: Map<String, File>): List<Assistant> {
+        val array = element as? JsonArray ?: return emptyList()
         val assistants = mutableListOf<Assistant>()
-        db.rawQuery("SELECT payload FROM assistant_rows ORDER BY sort_order", null).use { cursor ->
-            while (cursor.moveToNext()) {
-                val payload = cursor.getString(0)
-                val obj = runCatching { JsonInstant.parseToJsonElement(payload).jsonObject }.getOrNull() ?: continue
-                val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: ""
-                val avatarStr = obj["avatar"]?.jsonPrimitive?.contentOrNull
-                val systemPrompt = obj["systemPrompt"]?.jsonPrimitive?.contentOrNull ?: ""
-                val background = obj["background"]?.jsonPrimitive?.contentOrNull
-
-                val avatar = parseAvatar(avatarStr, imageFiles)
-                val resolvedBackground = background?.let { resolveImageUrl(it, imageFiles) }
-
-                assistants.add(
-                    Assistant(
-                        name = name,
-                        avatar = avatar,
-                        systemPrompt = systemPrompt,
-                        background = resolvedBackground,
-                    ),
-                )
-            }
+        array.forEach { value ->
+            val obj = value as? JsonObject ?: return@forEach
+            val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: ""
+            val avatarStr = obj["avatar"]?.jsonPrimitive?.contentOrNull
+            val systemPrompt = obj["systemPrompt"]?.jsonPrimitive?.contentOrNull ?: ""
+            val background = obj["background"]?.jsonPrimitive?.contentOrNull
+            assistants.add(
+                Assistant(
+                    name = name,
+                    avatar = parseAvatar(avatarStr, imageFiles),
+                    systemPrompt = systemPrompt,
+                    background = background?.let { resolveImageUrl(it, imageFiles) },
+                ),
+            )
         }
         return assistants
     }
 
+    private fun parseMemories(element: kotlinx.serialization.json.JsonElement?): List<String> {
+        val array = element as? JsonArray ?: return emptyList()
+        return array.mapNotNull { value ->
+            val obj = value as? JsonObject ?: return@mapNotNull null
+            obj["content"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        }.distinct()
+    }
+
     private fun parseAvatar(avatarStr: String?, imageFiles: Map<String, File>): Avatar {
         if (avatarStr.isNullOrBlank()) return Avatar.Dummy
-        // 可能是 emoji（首字母/emoji 头像）
+        // 短文本视为 emoji
         if (avatarStr.length <= 8 && !avatarStr.startsWith("data:") && !avatarStr.startsWith("http") && !avatarStr.contains('/')) {
             return Avatar.Emoji(avatarStr)
         }
-        val url = resolveImageUrl(avatarStr, imageFiles)
-        return Avatar.Image(url)
+        return Avatar.Image(resolveImageUrl(avatarStr, imageFiles))
     }
 
     private fun resolveImageUrl(url: String, imageFiles: Map<String, File>): String {
@@ -151,115 +168,98 @@ object KelivoImporter {
         }.getOrElse { url }
     }
 
-    // ---- 记忆 ----
-
-    private fun importMemories(db: SQLiteDatabase): List<String> {
-        val memories = mutableListOf<String>()
-        // assistant_memory_rows.payload 是 {id, assistantId, content}
-        db.rawQuery("SELECT payload FROM assistant_memory_rows", null).use { cursor ->
-            while (cursor.moveToNext()) {
-                val payload = cursor.getString(0)
-                val obj = runCatching { JsonInstant.parseToJsonElement(payload).jsonObject }.getOrNull()
-                val content = obj?.get("content")?.jsonPrimitive?.contentOrNull
-                if (!content.isNullOrBlank()) memories.add(content)
-            }
-        }
-        // memory_entry_rows.content 是直接文本
-        db.rawQuery("SELECT content FROM memory_entry_rows WHERE status = 'active'", null).use { cursor ->
-            while (cursor.moveToNext()) {
-                val content = cursor.getString(0)
-                if (content.isNotBlank()) memories.add(content)
-            }
-        }
-        return memories.distinct()
-    }
-
-    // ---- 聊天记录 ----
+    // ---- 聊天记录（database/kelivo.db） ----
 
     private fun importConversations(db: SQLiteDatabase, assistantId: Uuid): List<Conversation> {
         val partsByMessage = mutableMapOf<String, MutableList<UIMessagePart>>()
-        db.rawQuery(
-            "SELECT revision_id, ordinal, kind, payload FROM message_part_rows ORDER BY revision_id, ordinal",
-            null,
-        ).use { cursor ->
-            while (cursor.moveToNext()) {
-                val revisionId = cursor.getString(0)
-                val kind = cursor.getString(2)
-                val payload = cursor.getString(3)
-                val part = parsePart(kind, payload) ?: continue
-                partsByMessage.getOrPut(revisionId) { mutableListOf() }.add(part)
+        runCatching {
+            db.rawQuery(
+                "SELECT revision_id, ordinal, kind, payload FROM message_part_rows ORDER BY revision_id, ordinal",
+                null,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val revisionId = cursor.getString(0)
+                    val kind = cursor.getString(2)
+                    val payload = cursor.getString(3)
+                    val part = parsePart(kind, payload) ?: continue
+                    partsByMessage.getOrPut(revisionId) { mutableListOf() }.add(part)
+                }
             }
         }
 
         val messagesByConversation = mutableMapOf<String, MutableList<UIMessage>>()
-        db.rawQuery(
-            "SELECT id, conversation_id, role, timestamp, total_tokens, prompt_tokens, completion_tokens FROM message_rows ORDER BY conversation_id, message_order",
-            null,
-        ).use { cursor ->
-            while (cursor.moveToNext()) {
-                val id = cursor.getString(0)
-                val conversationId = cursor.getString(1)
-                val role = cursor.getString(2).toMessageRole() ?: continue
-                val timestampMicros = cursor.getLong(3)
-                val parts = partsByMessage[id] ?: emptyList()
-                if (parts.isEmpty() && role != MessageRole.SYSTEM) continue
+        runCatching {
+            db.rawQuery(
+                "SELECT id, conversation_id, role, timestamp, total_tokens, prompt_tokens, completion_tokens FROM message_rows ORDER BY conversation_id, message_order",
+                null,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val conversationId = cursor.getString(1)
+                    val role = cursor.getString(2).toMessageRole() ?: continue
+                    val timestampMicros = cursor.getLong(3)
+                    val parts = partsByMessage[id] ?: emptyList()
+                    if (parts.isEmpty() && role != MessageRole.SYSTEM) continue
 
-                val totalTokens = cursor.getLong(4)
-                val promptTokens = cursor.getLong(5)
-                val completionTokens = cursor.getLong(6)
-                val usage = if (totalTokens > 0 || promptTokens > 0 || completionTokens > 0) {
-                    TokenUsage(
-                        promptTokens = promptTokens.toInt(),
-                        completionTokens = completionTokens.toInt(),
-                        totalTokens = totalTokens.toInt(),
+                    val totalTokens = cursor.getLong(4)
+                    val promptTokens = cursor.getLong(5)
+                    val completionTokens = cursor.getLong(6)
+                    val usage = if (totalTokens > 0 || promptTokens > 0 || completionTokens > 0) {
+                        TokenUsage(
+                            promptTokens = promptTokens.toInt(),
+                            completionTokens = completionTokens.toInt(),
+                            totalTokens = totalTokens.toInt(),
+                        )
+                    } else null
+
+                    messagesByConversation.getOrPut(conversationId) { mutableListOf() }.add(
+                        UIMessage(
+                            id = stableUuid("kelivo:message:$id"),
+                            role = role,
+                            parts = parts,
+                            createdAt = microsToLocalDateTime(timestampMicros),
+                            usage = usage,
+                        ),
                     )
-                } else null
-
-                messagesByConversation.getOrPut(conversationId) { mutableListOf() }.add(
-                    UIMessage(
-                        id = stableUuid("kelivo:message:$id"),
-                        role = role,
-                        parts = parts,
-                        createdAt = microsToLocalDateTime(timestampMicros),
-                        usage = usage,
-                    ),
-                )
+                }
             }
         }
 
         val conversations = mutableListOf<Conversation>()
-        db.rawQuery(
-            "SELECT id, title, created_at, updated_at, is_pinned FROM conversation_rows ORDER BY created_at",
-            null,
-        ).use { cursor ->
-            while (cursor.moveToNext()) {
-                val id = cursor.getString(0)
-                val title = cursor.getString(1)
-                val createdAtMicros = cursor.getLong(2)
-                val updatedAtMicros = cursor.getLong(3)
-                val isPinned = cursor.getInt(4) == 1
+        runCatching {
+            db.rawQuery(
+                "SELECT id, title, created_at, updated_at, is_pinned FROM conversation_rows ORDER BY created_at",
+                null,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val title = cursor.getString(1)
+                    val createdAtMicros = cursor.getLong(2)
+                    val updatedAtMicros = cursor.getLong(3)
+                    val isPinned = cursor.getInt(4) == 1
 
-                val messages = messagesByConversation[id] ?: emptyList()
-                if (messages.isEmpty()) continue
+                    val messages = messagesByConversation[id] ?: emptyList()
+                    if (messages.isEmpty()) continue
 
-                val nodes = messages.mapIndexed { index, message ->
-                    MessageNode(
-                        id = stableUuid("kelivo:node:$id:$index"),
-                        messages = listOf(message),
-                        selectIndex = 0,
+                    val nodes = messages.mapIndexed { index, message ->
+                        MessageNode(
+                            id = stableUuid("kelivo:node:$id:$index"),
+                            messages = listOf(message),
+                            selectIndex = 0,
+                        )
+                    }
+
+                    conversations.add(
+                        Conversation(
+                            id = stableUuid("kelivo:session:$id"),
+                            assistantId = assistantId,
+                            title = title.ifBlank { "导入的对话" },
+                            messageNodes = nodes,
+                            createAt = Instant.ofEpochMilli(createdAtMicros / 1000),
+                            updateAt = Instant.ofEpochMilli(updatedAtMicros / 1000),
+                        ),
                     )
                 }
-
-                conversations.add(
-                    Conversation(
-                        id = stableUuid("kelivo:session:$id"),
-                        assistantId = assistantId,
-                        title = title.ifBlank { "导入的对话" },
-                        messageNodes = nodes,
-                        createAt = Instant.ofEpochMilli(createdAtMicros / 1000),
-                        updateAt = Instant.ofEpochMilli(updatedAtMicros / 1000),
-                    ),
-                )
             }
         }
         return conversations
@@ -324,6 +324,28 @@ object KelivoImporter {
             throw IllegalArgumentException("备份里没找到 kelivo.db，请确认这是 Kelivo 的备份")
         }
         return out
+    }
+
+    private fun extractEntryText(zipFile: File, predicate: (String) -> Boolean): String? {
+        val out = File.createTempFile("kelivo_settings_", ".json")
+        ZipInputStream(zipFile.inputStream()).use { zin ->
+            var entry = zin.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory && predicate(entry.name)) {
+                    FileOutputStream(out).use { fos -> zin.copyTo(fos) }
+                    break
+                }
+                entry = zin.nextEntry
+            }
+        }
+        return if (out.length() == 0L) {
+            out.delete()
+            null
+        } else {
+            val text = out.readText()
+            out.delete()
+            text
+        }
     }
 
     private fun extractImages(zipFile: File): Map<String, File> {
