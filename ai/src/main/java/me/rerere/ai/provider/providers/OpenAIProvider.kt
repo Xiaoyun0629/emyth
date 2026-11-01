@@ -46,6 +46,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.util.Base64
 
 class OpenAIProvider(
     private val client: OkHttpClient,
@@ -223,6 +224,7 @@ class OpenAIProvider(
                         ImageAspectRatio.PORTRAIT -> "1024x1536"
                     }
                 )
+                put("response_format", "b64_json")
             }.mergeCustomBody(params.customBody)
         )
 
@@ -246,7 +248,10 @@ class OpenAIProvider(
         val items = data.map { imageJson ->
             val imageObj = imageJson.jsonObject
             val b64Json = imageObj["b64_json"]?.jsonPrimitive?.contentOrNull
-                ?: error("No b64_json in response")
+                ?: imageObj["url"]?.jsonPrimitive?.contentOrNull?.let { url ->
+                    downloadImageToBase64(url)
+                }
+                ?: error("No b64_json or url in response")
 
             ImageGenerationItem(
                 data = b64Json,
@@ -325,7 +330,10 @@ class OpenAIProvider(
         val items = data.map { imageJson ->
             val imageObj = imageJson.jsonObject
             val b64Json = imageObj["b64_json"]?.jsonPrimitive?.contentOrNull
-                ?: error("No b64_json in response")
+                ?: imageObj["url"]?.jsonPrimitive?.contentOrNull?.let { url ->
+                    downloadImageToBase64(url)
+                }
+                ?: error("No b64_json or url in response")
 
             ImageGenerationItem(
                 data = b64Json,
@@ -334,6 +342,15 @@ class OpenAIProvider(
         }
 
         ImageGenerationResult(items = items)
+    }
+
+    private suspend fun downloadImageToBase64(url: String): String {
+        val request = Request.Builder().url(url).build()
+        val response = client.newCall(request).await()
+        if (!response.isSuccessful) {
+            error("Failed to download image: ${response.code}")
+        }
+        return Base64.getEncoder().encodeToString(response.body?.bytes() ?: ByteArray(0))
     }
 
     private fun File.imageMediaType(): String = when (extension.lowercase()) {
