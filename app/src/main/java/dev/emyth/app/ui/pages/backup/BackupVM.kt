@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.repository.ConversationRepository
+import dev.emyth.app.data.repository.MemoryRepository
 import dev.emyth.app.data.sync.importer.ChatboxImporter
 import dev.emyth.app.data.sync.importer.CherryStudioProviderImporter
 import dev.emyth.app.data.sync.importer.KelivoImporter
@@ -34,6 +35,7 @@ class BackupVM(
     private val webDavSync: WebDavSync,
     private val s3Sync: S3Sync,
     private val conversationRepository: ConversationRepository,
+    private val memoryRepository: MemoryRepository,
 ) : ViewModel() {
     val settings = settingsStore.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -170,6 +172,37 @@ class BackupVM(
             file = file,
             assistantId = settings.value.assistantId,
         )
+        val targetAssistantId = settings.value.assistantId
+
+        if (payload.providers.isNotEmpty()) {
+            settingsStore.update(
+                settings.value.copy(providers = payload.providers + settings.value.providers),
+            )
+        }
+
+        if (payload.assistants.isNotEmpty()) {
+            val importedAssistant = payload.assistants.first()
+            settingsStore.update(
+                settings.value.copy(
+                    assistants = settings.value.assistants.map { assistant ->
+                        if (assistant.id == targetAssistantId) {
+                            assistant.copy(
+                                avatar = importedAssistant.avatar,
+                                background = importedAssistant.background,
+                            )
+                        } else {
+                            assistant
+                        }
+                    },
+                ),
+            )
+        }
+
+        val assistantIdStr = targetAssistantId.toString()
+        payload.memories.forEach { content ->
+            runCatching { memoryRepository.addMemory(assistantIdStr, content) }
+        }
+
         var importedConversations = 0
         var skippedExistingConversations = 0
         payload.conversations.forEach { conversation ->
@@ -182,7 +215,7 @@ class BackupVM(
         }
         Log.i(
             TAG,
-            "restoreFromRikkahub: import $importedConversations conversations, skip $skippedExistingConversations existing",
+            "restoreFromRikkahub: ${payload.providers.size} providers, ${payload.assistants.size} assistants, ${payload.memories.size} memories, $importedConversations conversations, skip $skippedExistingConversations existing",
         )
         return ImportRestoreResult(
             importedConversations = importedConversations,
@@ -195,6 +228,37 @@ class BackupVM(
             file = file,
             assistantId = settings.value.assistantId,
         )
+        val targetAssistantId = settings.value.assistantId
+
+        if (payload.providers.isNotEmpty()) {
+            settingsStore.update(
+                settings.value.copy(providers = payload.providers + settings.value.providers),
+            )
+        }
+
+        if (payload.assistants.isNotEmpty()) {
+            val importedAssistant = payload.assistants.first()
+            settingsStore.update(
+                settings.value.copy(
+                    assistants = settings.value.assistants.map { assistant ->
+                        if (assistant.id == targetAssistantId) {
+                            assistant.copy(
+                                avatar = importedAssistant.avatar,
+                                background = importedAssistant.background,
+                            )
+                        } else {
+                            assistant
+                        }
+                    },
+                ),
+            )
+        }
+
+        val assistantIdStr = targetAssistantId.toString()
+        payload.memories.forEach { content ->
+            runCatching { memoryRepository.addMemory(assistantIdStr, content) }
+        }
+
         var importedConversations = 0
         var skippedExistingConversations = 0
         payload.conversations.forEach { conversation ->
@@ -207,7 +271,7 @@ class BackupVM(
         }
         Log.i(
             TAG,
-            "restoreFromKelivo: import $importedConversations conversations, skip $skippedExistingConversations existing",
+            "restoreFromKelivo: ${payload.providers.size} providers, ${payload.assistants.size} assistants, ${payload.memories.size} memories, $importedConversations conversations, skip $skippedExistingConversations existing",
         )
         return ImportRestoreResult(
             importedConversations = importedConversations,
