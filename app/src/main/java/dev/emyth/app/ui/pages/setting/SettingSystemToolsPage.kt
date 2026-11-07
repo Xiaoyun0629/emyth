@@ -985,12 +985,12 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             }
 
 
-            // 看屏（MediaProjection 录屏 + 视觉模型，看见微信等做了无障碍屏蔽的界面）
+            // 看屏（MediaProjection 录屏 + 视觉模型，看见做了无障碍屏蔽的界面）
             item {
-            CardGroup(title = { Text("看屏（看见微信）") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+            CardGroup(title = { Text("看屏") }, modifier = Modifier.padding(horizontal = 8.dp)) {
                 item(
                     headlineContent = { Text("启用看屏工具") },
-                    supportingContent = { Text("用录屏 + 视觉模型「看见」微信等做了无障碍屏蔽的界面。首次使用需授权录屏，Android 14+ 会有录屏指示器") },
+                    supportingContent = { Text("用录屏 + 视觉模型「看见」任何做了无障碍屏蔽的界面（微信、银行、游戏等）。首次使用需授权录屏，Android 14+ 会有录屏指示器") },
                     trailingContent = {
                         Switch(
                             checked = systemToolsSetting.screenCaptureEnabled,

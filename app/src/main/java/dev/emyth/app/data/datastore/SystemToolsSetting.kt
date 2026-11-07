@@ -103,7 +103,7 @@ data class SystemToolsSetting(
     val automationGlowEnabled: Boolean = false,
     val automationGlowColor: Long = 0xFF00E5FFL,  // ARGB，默认发光青色
 
-    // 看屏：MediaProjection 录屏截图 + 视觉模型理解，用于「看见」微信等做了无障碍屏蔽的界面
+    // 看屏：MediaProjection 录屏截图 + 视觉模型理解，用于「看见」做了无障碍屏蔽的界面
     val screenCaptureEnabled: Boolean = false,
 ) {
     fun getEnabledOptions(): Set<dev.emyth.app.data.ai.tools.SystemToolOption> {

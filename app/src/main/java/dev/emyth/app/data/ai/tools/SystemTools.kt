@@ -472,12 +472,16 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         Tool(
             name = "read_screen",
             needsApproval = true,
-            description = "看屏：用 MediaProjection 录屏截图 + 视觉模型理解屏幕内容，用于「看见」微信等做了无障碍屏蔽的界面。首次调用若未授权会弹出录屏授权框。",
+            description = "看屏：用 MediaProjection 录屏截图 + 视觉模型理解屏幕内容，用于「看见」任何做了无障碍屏蔽、读屏读不到的界面（微信、银行、游戏等）。首次调用若未授权会弹出录屏授权框。",
             parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
             execute = { _ ->
                 if (!ScreenCaptureManager.isReady()) {
-                    ScreenCaptureAuthActivity.start(context)
-                    listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen。"}"""))
+                    if (ScreenCaptureManager.isAwaitingAuth()) {
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"正在等待录屏授权，请在系统弹窗里点「允许」，点完后再调用一次 read_screen。"}"""))
+                    } else {
+                        ScreenCaptureAuthActivity.start(context)
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen。"}"""))
+                    }
                 } else {
                     try {
                         val bmp = ScreenCaptureManager.captureScreen()
