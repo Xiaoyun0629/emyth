@@ -141,7 +141,7 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             initialColor = systemToolsSetting.automationGlowColor,
             defaultColor = MaterialTheme.colorScheme.surfaceVariant,
             onConfirm = {
-                updateSystemToolsSetting(systemToolsSetting.copy(automationGlowColor = it ?: 0xFF00E5FF))
+                updateSystemToolsSetting(systemToolsSetting.copy(automationGlowColor = it ?: 0xFF00E5FFL))
                 showGlowColorPicker = false
             },
             onDismiss = { showGlowColorPicker = false }

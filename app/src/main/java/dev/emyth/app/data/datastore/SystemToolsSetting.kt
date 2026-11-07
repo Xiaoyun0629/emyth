@@ -101,7 +101,7 @@ data class SystemToolsSetting(
 
     // 光圈：AI 操控手机时屏幕边缘亮一圈光，表示「机正在操控」（纯 UI 状态指示）
     val automationGlowEnabled: Boolean = false,
-    val automationGlowColor: Long = 0xFF00E5FF,  // ARGB，默认发光青色
+    val automationGlowColor: Long = 0xFF00E5FFL,  // ARGB，默认发光青色
 
     // 看屏：MediaProjection 录屏截图 + 视觉模型理解，用于「看见」微信等做了无障碍屏蔽的界面
     val screenCaptureEnabled: Boolean = false,
