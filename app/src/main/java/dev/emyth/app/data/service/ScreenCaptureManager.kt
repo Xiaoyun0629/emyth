@@ -21,7 +21,7 @@ import java.nio.ByteBuffer
 
 /**
  * 屏幕捕获管理器：用 MediaProjection 录屏授权，按需抓帧，配合视觉模型「看见」做了无障碍屏蔽、读屏读不到的界面。
- * 注意：MediaProjection 授权 token 绑定到发起授权的 Activity，因此 MediaProjection 必须由 Activity 用自身 context 创建后传入。
+ * MediaProjection 必须由 ScreenCaptureService（foregroundServiceType=mediaProjection 前台服务）创建后传入。
  */
 object ScreenCaptureManager {
 
@@ -40,6 +40,13 @@ object ScreenCaptureManager {
     @Volatile
     private var awaitingAuth = false
 
+    /**
+     * 代际计数：每次 start/stop/清理都自增。
+     * 关键作用：旧的 MediaProjection 被 stop() 时，它的 onStop 回调是延迟到主线程执行的；
+     * 若不加代际判断，这个迟到的回调会把「后来新建的 MediaProjection」也一起清掉，导致二次授权后永远建不起来。
+     */
+    private var generation = 0
+
     /** 是否已授权并持有 MediaProjection。 */
     @Synchronized
     fun isReady(): Boolean = mediaProjection != null && imageReader != null
@@ -55,12 +62,12 @@ object ScreenCaptureManager {
     }
 
     /**
-     * 用 Activity 已拿到的 MediaProjection 建立 ImageReader + VirtualDisplay。
-     * mediaProjection 必须由授权 Activity 用自身 context 创建（token 绑定），否则会失效。
+     * 用前台服务已拿到的 MediaProjection 建立 ImageReader + VirtualDisplay。
      */
     @Synchronized
     fun start(context: Context, mp: MediaProjection) {
         stopInternal()
+        val myGen = generation
         try {
             val appContext = context.applicationContext
             val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -90,10 +97,10 @@ object ScreenCaptureManager {
             awaitingAuth = false
             android.util.Log.i(TAG, "Screen capture started: ${screenWidth}x${screenHeight}@${screenDensityDpi}")
 
-            // 用户从状态栏手动停止录屏时，清理资源，回到未授权状态
+            // 用户从状态栏手动停止录屏 / 投影被系统回收时，清理资源。代际判断防止旧回调误清理新资源。
             mp.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
-                    mainHandler.post { onUserStop() }
+                    mainHandler.post { onStopForGeneration(myGen) }
                 }
             }, mainHandler)
         } catch (e: Exception) {
@@ -103,16 +110,18 @@ object ScreenCaptureManager {
         }
     }
 
-    /** 用户手动停止录屏：释放资源，但不递归调用 stop()。 */
+    /** 只有当前代际的投影 onStop 才真正清理资源，过时的回调直接忽略。 */
     @Synchronized
-    private fun onUserStop() {
+    private fun onStopForGeneration(myGen: Int) {
+        if (generation != myGen) return
+        generation++
         try { virtualDisplay?.release() } catch (_: Exception) {}
         try { imageReader?.close() } catch (_: Exception) {}
         virtualDisplay = null
         imageReader = null
         mediaProjection = null
         awaitingAuth = false
-        android.util.Log.i(TAG, "Screen capture stopped by user")
+        android.util.Log.i(TAG, "Screen capture stopped (generation $myGen)")
     }
 
     /** 抓一帧屏幕，转成 Bitmap。 */
@@ -148,6 +157,7 @@ object ScreenCaptureManager {
     }
 
     private fun stopInternal() {
+        generation++
         try { virtualDisplay?.release() } catch (_: Exception) {}
         try { imageReader?.close() } catch (_: Exception) {}
         try { mediaProjection?.stop() } catch (_: Exception) {}
