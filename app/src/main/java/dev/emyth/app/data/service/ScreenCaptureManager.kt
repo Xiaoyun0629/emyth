@@ -49,7 +49,7 @@ object ScreenCaptureManager {
         try {
             val appContext = context.applicationContext
             val mpm = appContext.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            val mp = mpm.getMediaProjection(resultCode, data)
+            val mp = mpm.getMediaProjection(resultCode, data) ?: return
 
             val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             val metrics = DisplayMetrics()
