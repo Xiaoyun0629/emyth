@@ -17,6 +17,12 @@ import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
 
 /**
@@ -155,6 +161,48 @@ object ScreenCaptureManager {
     fun stop() {
         stopInternal()
     }
+
+    /**
+     * 用 ML Kit 本地 OCR 识别当前屏幕，返回「文字块 + 像素坐标」的 JSON 字符串。
+     * 用途：看屏（read_screen）只能「看见」内容、拿不到节点坐标；本方法能定位每个文字块的位置，
+     * 从而找到输入框、按钮等可点击元素，配合 tap 坐标点击。
+     */
+    suspend fun recognizeTextWithBoxes(): String? = withContext(Dispatchers.IO) {
+        val bmp = captureScreen() ?: return@withContext null
+        try {
+            val recognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
+            val image = InputImage.fromBitmap(bmp, 0)
+            val text = Tasks.await(recognizer.process(image))
+            recognizer.close()
+
+            val sb = StringBuilder()
+            sb.append("{\"width\":").append(screenWidth)
+              .append(",\"height\":").append(screenHeight)
+              .append(",\"text\":\"").append(escapeJson(text.text)).append("\"")
+              .append(",\"blocks\":[")
+            var first = true
+            for (block in text.textBlocks) {
+                val box = block.boundingBox ?: continue
+                if (!first) sb.append(",")
+                first = false
+                sb.append("{\"text\":\"").append(escapeJson(block.text)).append("\"")
+                  .append(",\"left\":").append(box.left)
+                  .append(",\"top\":").append(box.top)
+                  .append(",\"right\":").append(box.right)
+                  .append(",\"bottom\":").append(box.bottom)
+                  .append("}")
+            }
+            sb.append("]}")
+            sb.toString()
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "recognizeTextWithBoxes failed", e)
+            null
+        }
+    }
+
+    private fun escapeJson(s: String): String =
+        s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+
 
     private fun stopInternal() {
         generation++

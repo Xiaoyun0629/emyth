@@ -503,6 +503,36 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         )
     }
 
+    private val readScreenBoxesTool by lazy {
+        Tool(
+            name = "read_screen_boxes",
+            needsApproval = true,
+            description = "看屏定位：用本地 OCR 识别当前屏幕并返回每个文字块的像素坐标，用于定位输入框、按钮等可点击元素（微信等做了无障碍屏蔽、拿不到节点坐标的界面）。配合 tap 坐标点击使用。",
+            parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
+            execute = { _ ->
+                if (!ScreenCaptureManager.isReady()) {
+                    if (ScreenCaptureManager.isAwaitingAuth()) {
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"正在等待录屏授权，请在系统弹窗里点「允许」，点完后再调用一次 read_screen_boxes。"}"""))
+                    } else {
+                        ScreenCaptureAuthActivity.start(context)
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen_boxes。"}"""))
+                    }
+                } else {
+                    try {
+                        val json = ScreenCaptureManager.recognizeTextWithBoxes()
+                        if (json == null) {
+                            listOf(UIMessagePart.Text("""{"success":false,"error":"识别失败"}"""))
+                        } else {
+                            listOf(UIMessagePart.Text(json))
+                        }
+                    } catch (e: Exception) {
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
+                    }
+                }
+            }
+        )
+    }
+
     // ==================== 获取工具列表 ====================
 
     fun getTools(
@@ -562,7 +592,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             tools.add(cancelWakeTool)
         }
         if (SystemToolOption.Fingerprint in enabledTools) tools.add(fingerprintTool)
-        if (SystemToolOption.ScreenCapture in enabledTools) tools.add(readScreenTool)
+        if (SystemToolOption.ScreenCapture in enabledTools) { tools.add(readScreenTool); tools.add(readScreenBoxesTool) }
         return tools
     }
 }
