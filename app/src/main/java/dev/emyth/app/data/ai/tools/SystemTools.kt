@@ -21,6 +21,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.data.files.FilesManager
+import dev.emyth.app.data.service.DeviceEventLocalStore
 import dev.emyth.app.data.service.AmapService
 import dev.emyth.app.data.service.DeviceLocationFetcher
 import dev.emyth.app.data.service.RikkaNotificationListenerService
@@ -452,24 +453,10 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             execute = { args ->
                 val params = args.jsonObject
                 val count = (params["count"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 20).coerceIn(1, 50)
-                val ss = settings.systemToolsSetting
-                if (!ss.supabaseEnabled || ss.supabaseUrl.isBlank() || ss.supabaseApiKey.isBlank()) {
-                    return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未配置 Supabase（吃醋拉回依赖它记录事件）"}"""))
-                }
                 try {
-                    val baseUrl = ss.supabaseUrl.trimEnd('/')
-                    val url = java.net.URL("$baseUrl/rest/v1/${ss.supabaseTableName}?select=timestamp,foreground_app,device_event&order=timestamp.desc&limit=$count")
-                    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
-                        requestMethod = "GET"
-                        setRequestProperty("apikey", ss.supabaseApiKey)
-                        setRequestProperty("Authorization", "Bearer ${ss.supabaseApiKey}")
-                        setRequestProperty("Accept", "application/json")
-                        connectTimeout = 15000
-                        readTimeout = 15000
-                    }
-                    val code = conn.responseCode
-                    val text = if (code in 200..299) conn.inputStream.bufferedReader().readText() else (conn.errorStream?.bufferedReader()?.readText() ?: "")
-                    listOf(UIMessagePart.Text(if (code in 200..299) text else """{"success":false,"error":"HTTP $code $text"}"""))
+                    // 本地存储：不依赖 Supabase，国内网络不稳也不影响查岗
+                    val json = DeviceEventLocalStore.queryJson(context, count)
+                    listOf(UIMessagePart.Text(json))
                 } catch (e: Exception) {
                     listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
                 }

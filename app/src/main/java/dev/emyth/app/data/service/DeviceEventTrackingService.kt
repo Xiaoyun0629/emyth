@@ -61,11 +61,7 @@ class DeviceEventTrackingService : Service() {
                     val settingsStore = GlobalContext.get().get<SettingsStore>()
                     val settings = settingsStore.settingsFlowRaw.first()
                     val s = settings.systemToolsSetting
-                    if (s.deviceEventTrackingEnabled &&
-                        s.supabaseEnabled &&
-                        s.supabaseUrl.isNotBlank() &&
-                        s.supabaseApiKey.isNotBlank()
-                    ) {
+                    if (s.deviceEventTrackingEnabled) {
                         val intent = Intent(context, DeviceEventTrackingService::class.java)
                         try {
                             context.startForegroundService(intent)
@@ -168,26 +164,8 @@ class DeviceEventTrackingService : Service() {
                     Log.d(TAG, "handleScreenEvent: deviceEventTrackingEnabled=false, skip ($eventType)")
                     return@launch
                 }
-                if (!s.supabaseEnabled || s.supabaseUrl.isBlank() || s.supabaseApiKey.isBlank()) {
-                    Log.w(
-                        TAG,
-                        "handleScreenEvent: supabase config incomplete, skip " +
-                            "(supabaseEnabled=${s.supabaseEnabled}, urlBlank=${s.supabaseUrl.isBlank()}, " +
-                            "keyBlank=${s.supabaseApiKey.isBlank()}), eventType=$eventType"
-                    )
-                    return@launch
-                }
-                val service = SupabaseService(
-                    supabaseUrl = s.supabaseUrl,
-                    supabaseApiKey = s.supabaseApiKey,
-                    tableName = s.supabaseTableName
-                )
-                val result = service.insertDeviceEvent(eventType)
-                if (result.isSuccess) {
-                    Log.d(TAG, "handleScreenEvent: pushed event=$eventType")
-                } else {
-                    Log.e(TAG, "handleScreenEvent: push failed, eventType=$eventType", result.exceptionOrNull())
-                }
+                DeviceEventLocalStore.record(this@DeviceEventTrackingService, eventType)
+                Log.d(TAG, "handleScreenEvent: recorded event=$eventType (local)")
             } catch (e: Exception) {
                 Log.e(TAG, "handleScreenEvent: unexpected error, eventType=$eventType", e)
             }

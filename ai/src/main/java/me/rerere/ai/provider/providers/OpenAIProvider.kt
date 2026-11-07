@@ -225,7 +225,7 @@ class OpenAIProvider(
                     }
                 )
                 put("response_format", "b64_json")
-            }.mergeCustomBody(params.customBody)
+            }
         )
 
         val request = Request.Builder()
@@ -301,14 +301,6 @@ class OpenAIProvider(
                 imageFile.name,
                 imageFile.asRequestBody(imageFile.imageMediaType().toMediaType())
             )
-        }
-
-        params.customBody.forEach { customBody ->
-            val value = when (val element = customBody.value) {
-                is JsonPrimitive -> element.contentOrNull ?: element.toString()
-                else -> element.toString()
-            }
-            bodyBuilder.addFormDataPart(customBody.key, value)
         }
 
         val request = Request.Builder()

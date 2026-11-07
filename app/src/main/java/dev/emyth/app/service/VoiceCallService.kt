@@ -192,10 +192,17 @@ class VoiceCallService : Service(), KoinComponent {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
             )
         } catch (e: Exception) {
-            Log.e(TAG, "startForeground 失败, conversationId=$conversationId", e)
-            _activeConversationId.value = null
-            stopSelf()
-            return START_NOT_STICKY
+            Log.e(TAG, "startForeground(带麦克风类型) 失败, 尝试降级, conversationId=$conversationId", e)
+            // Android 13+ 无通知权限(或前台服务类型受限)时可能抛 CannotPostForegroundServiceNotification，
+            // 降级为不带类型的 startForeground 再试一次，尽量保住通话，避免整个 app 崩溃。
+            try {
+                startForeground(NOTIFICATION_ID, buildNotification(_uiState.value))
+            } catch (e2: Exception) {
+                Log.e(TAG, "降级 startForeground 也失败", e2)
+                _activeConversationId.value = null
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
         serviceScope.launch {

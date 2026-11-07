@@ -50,6 +50,7 @@ import dev.emyth.app.data.sync.S3Sync
 import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -217,6 +218,8 @@ val dataSourceModule = module {
             .followSslRedirects(true)
             .followRedirects(true)
             .retryOnConnectionFailure(true)
+            // 强制 HTTP/1.1：修复部分中转站 HTTP/2 连接被 RST 重置导致的 PROTOCOL_ERROR（"stream was reset"）。WebSocket（ASR Realtime）仍走 HTTP/1.1 握手升级，不受影响。
+            .protocols(listOf(Protocol.HTTP_1_1))
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val requestBuilder = originalRequest.newBuilder()

@@ -1771,12 +1771,16 @@ addAll(localTools.getTools(assistant.localTools, dev.emyth.app.data.ai.tools.Too
         val targetNodeIndex = currentConversation.messageNodes.indexOfFirst { node ->
             node.messages.any { it.id == messageId }
         }
-        if (targetNodeIndex == -1) {
-            throw NotFoundException("Message not found")
+        // 找不到目标消息时降级为 fork 整个会话，避免抛 NotFoundException 导致崩溃
+        // （打电话等场景下消息可能尚未落库/已变更，fork 失败不应崩掉整个 app）
+        val forkEndIndex = if (targetNodeIndex == -1) {
+            currentConversation.messageNodes.size
+        } else {
+            targetNodeIndex + 1
         }
 
         val copiedNodes = currentConversation.messageNodes
-            .subList(0, targetNodeIndex + 1)
+            .subList(0, forkEndIndex)
             .map { node ->
                 node.copy(
                     id = Uuid.random(),

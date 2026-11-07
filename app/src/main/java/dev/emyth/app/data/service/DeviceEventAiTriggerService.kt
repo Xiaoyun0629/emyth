@@ -262,6 +262,8 @@ class DeviceEventAiTriggerService : Service() {
                 eventBuffer.removeAt(0)
             }
         }
+        // 同时持久化到本地（app_switch/home 也存本地，供 get_device_events 查岗用，不依赖 Supabase）
+        DeviceEventLocalStore.record(this@DeviceEventAiTriggerService, event.type, event.appName)
         Log.d(TAG, "Event added: ${event.type} ${event.appName}")
     }
 
