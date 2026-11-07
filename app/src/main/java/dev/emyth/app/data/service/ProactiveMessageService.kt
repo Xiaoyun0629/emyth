@@ -263,7 +263,6 @@ class ProactiveMessageService : KoinComponent {
         sb.appendLine("- 不要输出思考过程、推理过程或内部独白，只输出想对用户说的话")
         sb.appendLine("- 没什么好说的就回复 [PASS] 即可，不要强行找话题")
         return sb.toString()
-    }        return sb.toString()
     }
 
 
