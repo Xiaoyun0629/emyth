@@ -50,7 +50,8 @@ class ScreenCaptureService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // 关键顺序：必须先 startForeground(mediaProjection 类型)，再 getMediaProjection
+        // 关键顺序：必须先 startForeground(mediaProjection 类型)，再 getMediaProjection。
+        // Android 10(API 29) 起 MediaProjection 就要求前台服务带 mediaProjection 类型，不只 14+
         startForegroundCompat()
 
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
@@ -84,7 +85,7 @@ class ScreenCaptureService : Service() {
     }
 
     private fun startForegroundCompat() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceCompat.startForeground(
                 this,
                 NOTIFICATION_ID,
