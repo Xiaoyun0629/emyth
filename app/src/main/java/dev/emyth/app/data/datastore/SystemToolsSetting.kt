@@ -139,6 +139,7 @@ data class SystemToolsSetting(
         if (lockChatEnabled) options.add(dev.emyth.app.data.ai.tools.SystemToolOption.LockChat)
         if (taskEnabled) options.add(dev.emyth.app.data.ai.tools.SystemToolOption.Task)
         if (wakeEnabled) options.add(dev.emyth.app.data.ai.tools.SystemToolOption.Wake)
+        if (screenCaptureEnabled) options.add(dev.emyth.app.data.ai.tools.SystemToolOption.ScreenCapture)
         return options
     }
 }

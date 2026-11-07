@@ -22,6 +22,9 @@ import me.rerere.ai.ui.UIMessagePart
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.data.files.FilesManager
 import dev.emyth.app.data.service.DeviceEventLocalStore
+import dev.emyth.app.data.service.ScreenCaptureManager
+import dev.emyth.app.data.ai.transformers.OcrTransformer
+import dev.emyth.app.ui.activity.ScreenCaptureAuthActivity
 import dev.emyth.app.data.service.AmapService
 import dev.emyth.app.data.service.DeviceLocationFetcher
 import dev.emyth.app.data.service.RikkaNotificationListenerService
@@ -63,6 +66,7 @@ sealed class SystemToolOption {
     @Serializable @SerialName("wake") data object Wake : SystemToolOption()
     @Serializable @SerialName("fingerprint") data object Fingerprint : SystemToolOption()
     @Serializable @SerialName("pull_back") data object PullBack : SystemToolOption()
+    @Serializable @SerialName("screen_capture") data object ScreenCapture : SystemToolOption()
 }
 
 class SystemTools(private val context: Context, private val settings: Settings) {
@@ -464,6 +468,37 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         )
     }
 
+    private val readScreenTool by lazy {
+        Tool(
+            name = "read_screen",
+            needsApproval = true,
+            description = "看屏：用 MediaProjection 录屏截图 + 视觉模型理解屏幕内容，用于「看见」微信等做了无障碍屏蔽的界面。首次调用若未授权会弹出录屏授权框。",
+            parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
+            execute = { _ ->
+                if (!ScreenCaptureManager.isReady()) {
+                    ScreenCaptureAuthActivity.start(context)
+                    listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen。"}"""))
+                } else {
+                    try {
+                        val bmp = ScreenCaptureManager.captureScreen()
+                        if (bmp == null) {
+                            listOf(UIMessagePart.Text("""{"success":false,"error":"截图失败"}"""))
+                        } else {
+                            val file = java.io.File(context.cacheDir, "screen_capture.png")
+                            file.outputStream().use { out -> bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, out) }
+                            bmp.recycle()
+                            val url = "file://${file.absolutePath}"
+                            val ocr = OcrTransformer.performOcr(me.rerere.ai.ui.UIMessagePart.Image(url))
+                            listOf(UIMessagePart.Text(ocr))
+                        }
+                    } catch (e: Exception) {
+                        listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
+                    }
+                }
+            }
+        )
+    }
+
     // ==================== 获取工具列表 ====================
 
     fun getTools(
@@ -523,6 +558,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             tools.add(cancelWakeTool)
         }
         if (SystemToolOption.Fingerprint in enabledTools) tools.add(fingerprintTool)
+        if (SystemToolOption.ScreenCapture in enabledTools) tools.add(readScreenTool)
         return tools
     }
 }
