@@ -19,8 +19,8 @@ android {
         applicationId = "dev.emyth.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "Emyth 1.0.3"
+        versionCode = 6
+        versionName = "Emyth 1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

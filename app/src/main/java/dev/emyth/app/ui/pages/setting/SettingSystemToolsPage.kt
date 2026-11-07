@@ -135,6 +135,18 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
             onDismiss = { showLockColorPicker = false }
         )
     }
+    var showGlowColorPicker by remember { mutableStateOf(false) }
+    if (showGlowColorPicker) {
+        ColorPickerDialog(
+            initialColor = systemToolsSetting.automationGlowColor,
+            defaultColor = MaterialTheme.colorScheme.surfaceVariant,
+            onConfirm = {
+                updateSystemToolsSetting(systemToolsSetting.copy(automationGlowColor = it ?: 0xFF00E5FF))
+                showGlowColorPicker = false
+            },
+            onDismiss = { showGlowColorPicker = false }
+        )
+    }
 
     var showTaskBgColorPicker by remember { mutableStateOf(false) }
     if (showTaskBgColorPicker) {
@@ -942,6 +954,31 @@ fun SettingSystemToolsPage(vm: SettingVM = koinViewModel()) {
                     item(
                         headlineContent = { Text("说明") },
                         supportingContent = { Text("AI 可以读取短信收件箱中的消息，支持按条数、发件人、关键词和最近天数筛选。返回内容包括发件人、短信正文、时间和已读状态。") }
+                    )
+                }
+            }
+            }
+
+
+            // 光圈（AI 操控手机时亮一圈光）
+            item {
+            CardGroup(title = { Text("操控光圈") }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                item(
+                    headlineContent = { Text("操控时亮光圈") },
+                    supportingContent = { Text("AI 操控手机（点击/滑动/读屏）时，屏幕边缘亮一圈光表示正在操控") },
+                    trailingContent = {
+                        Switch(
+                            checked = systemToolsSetting.automationGlowEnabled,
+                            onCheckedChange = { enabled -> updateSystemToolsSetting(systemToolsSetting.copy(automationGlowEnabled = enabled)) }
+                        )
+                    }
+                )
+                if (systemToolsSetting.automationGlowEnabled) {
+                    item(
+                        headlineContent = { Text("光圈颜色") },
+                        trailingContent = {
+                            TextButton(onClick = { showGlowColorPicker = true }) { Text("自定义") }
+                        }
                     )
                 }
             }
