@@ -6,6 +6,7 @@
 
 package dev.emyth.app.data.service
 
+import android.app.Activity
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
@@ -54,7 +55,7 @@ class ScreenCaptureService : Service() {
 
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
         val data = readDataExtra(intent)
-        if (resultCode == RESULT_OK && data != null) {
+        if (resultCode == Activity.RESULT_OK && data != null) {
             try {
                 val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                 val mp = mpm.getMediaProjection(resultCode, data)
