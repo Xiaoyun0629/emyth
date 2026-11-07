@@ -12,10 +12,11 @@ import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import dev.emyth.app.data.service.ScreenCaptureManager
+import dev.emyth.app.data.service.ScreenCaptureService
 
 /**
- * 屏幕捕获授权页：弹出系统录屏授权框，用户同意后把 resultCode + data 交给 ScreenCaptureManager。
- * 关键：MediaProjection 必须由本 Activity（不是 applicationContext）创建，token 才有效。
+ * 屏幕捕获授权页：弹出系统录屏授权框。用户同意后，把授权结果交给 ScreenCaptureService
+ * （一个 foregroundServiceType="mediaProjection" 的前台服务），由它在 startForeground 之后建立 MediaProjection。
  */
 class ScreenCaptureAuthActivity : ComponentActivity() {
 
@@ -43,12 +44,8 @@ class ScreenCaptureAuthActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE) {
             if (resultCode == RESULT_OK && data != null) {
-                // 关键修复：用本 Activity（this）创建 MediaProjection，token 绑定关系才正确
-                val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                val mp = mpm.getMediaProjection(resultCode, data)
-                if (mp != null) {
-                    ScreenCaptureManager.start(this, mp)
-                }
+                // 交给前台服务建立 MediaProjection（Android 10+ 强制要求前台服务承载）
+                ScreenCaptureService.start(this, resultCode, data)
             } else {
                 // 用户拒绝授权：清除等待标记，避免后续 read_screen 一直以为「在等授权」
                 ScreenCaptureManager.stop()

@@ -472,7 +472,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         Tool(
             name = "read_screen",
             needsApproval = true,
-            description = "看屏：用 MediaProjection 录屏截图 + 视觉模型理解屏幕内容，用于「看见」任何做了无障碍屏蔽、读屏读不到的界面（微信、银行、游戏等）。首次调用若未授权会弹出录屏授权框。",
+            description = "看屏：用 MediaProjection 录屏截图 + 视觉模型理解屏幕内容，用于「看见」任何做了无障碍屏蔽、读屏读不到的界面（微信、游戏等）。首次调用若未授权会弹出录屏授权框。",
             parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
             execute = { _ ->
                 if (!ScreenCaptureManager.isReady()) {
