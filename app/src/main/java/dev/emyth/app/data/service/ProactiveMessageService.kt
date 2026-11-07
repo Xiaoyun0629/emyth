@@ -214,19 +214,17 @@ class ProactiveMessageService : KoinComponent {
         val sb = StringBuilder()
         sb.appendLine("[主动消息上下文]")
 
-        // Time since last chat
+        // 距离上次聊天
         try {
             val lastMessageTime = getLastMessageTime()
             if (lastMessageTime != null) {
                 val nowMs = java.lang.System.currentTimeMillis()
                 val lastMs = lastMessageTime.toEpochMilliseconds()
                 val diffMs = nowMs - lastMs
-                val duration = diffMs.milliseconds
-                val minutesAgo = duration.inWholeMinutes
-                val hoursAgo = duration.inWholeHours
+                val minutesAgo = diffMs / 60000
                 when {
-                    hoursAgo > 24 -> sb.appendLine("距离上次聊天: ${hoursAgo / 24}天${hoursAgo % 24}小时")
-                    hoursAgo > 0 -> sb.appendLine("距离上次聊天: ${hoursAgo}小时${minutesAgo % 60}分钟")
+                    minutesAgo > 1440 -> sb.appendLine("距离上次聊天: ${minutesAgo / 1440}天${(minutesAgo % 1440) / 60}小时")
+                    minutesAgo > 60 -> sb.appendLine("距离上次聊天: ${minutesAgo / 60}小时${minutesAgo % 60}分钟")
                     else -> sb.appendLine("距离上次聊天: ${minutesAgo}分钟")
                 }
             } else {
@@ -236,85 +234,12 @@ class ProactiveMessageService : KoinComponent {
             Log.w(TAG, "Failed to get last message time", e)
         }
 
-        // Current time
+        // 当前时间
         val currentTime = java.lang.System.currentTimeMillis()
         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
         sb.appendLine("当前时间: ${sdf.format(java.util.Date(currentTime))}")
 
-        // Location context
-        try {
-            val amapApiKey = settings.systemToolsSetting.amapApiKey
-            if (amapApiKey.isNotBlank()) {
-                val amapService = AmapService(amapApiKey)
-                val locationService = LocationService(context, amapService)
-                val locationResult = locationService.getCurrentLocation(amapApiKey)
-                if (locationResult.isSuccess) {
-                    val location = locationResult.getOrThrow()
-                    val locationLine = if (location.address.isNotBlank()) {
-                        "当前位置: ${location.address}"
-                    } else {
-                        "当前坐标: ${location.latitude}, ${location.longitude}"
-                    }
-                    if (!location.isFresh) {
-                        val ageMinutes = location.ageMs / 60000
-                        sb.appendLine("$locationLine（注意：这是大约 ${ageMinutes} 分钟前的定位，可能不是当前实时位置，不要当作用户现在就在这里）")
-                    } else {
-                        sb.appendLine(locationLine)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get location context", e)
-        }
-
-        // App usage
-        try {
-            val appUsageService = AppUsageService(context)
-            val usageResult = appUsageService.getTodayUsageStats()
-            if (usageResult.isSuccess) {
-                val usageStats = usageResult.getOrThrow()
-                if (usageStats.isNotEmpty()) {
-                    sb.appendLine("今日应用使用:")
-                    usageStats.take(5).forEach { stat ->
-                        val minutes = stat.totalTimeInForeground / 60000
-                        if (minutes > 0) {
-                            sb.appendLine("  - ${stat.appName}: ${minutes}分钟")
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get app usage context", e)
-        }
-
-        // Foreground app
-        try {
-            val appUsageService = AppUsageService(context)
-            val foregroundResult = appUsageService.getForegroundApp()
-            if (foregroundResult.isSuccess) {
-                val foregroundApp = foregroundResult.getOrThrow()
-                if (foregroundApp.isNotBlank()) {
-                    sb.appendLine("当前前台应用: $foregroundApp")
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get foreground app", e)
-        }
-
-        // 今日通知
-        try {
-            val notifications = dev.emyth.app.data.service.RikkaNotificationListenerService.getTodayNotifications().take(10)
-            if (notifications.isNotEmpty()) {
-                sb.appendLine("今日通知（最近${notifications.size}条）:")
-                notifications.forEach { notif ->
-                    sb.appendLine("  - [${notif.appName}] ${notif.title}: ${notif.content.take(50)}")
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get notifications", e)
-        }
-
-        // 设备信息（电量、充电状态等）
+        // 设备电量（保留这个模板变量；定位/应用使用/前台应用/通知改为让 AI 需要时调用工具现查）
         try {
             val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
             if (batteryIntent != null) {
@@ -329,23 +254,16 @@ class ProactiveMessageService : KoinComponent {
             Log.w(TAG, "Failed to get battery info", e)
         }
 
-        // 健康状态（Gadgetbridge）- 跳过，AI可通过工具自行查询
-
         sb.appendLine()
-        sb.appendLine("请根据以上上下文，以自然、关心、有趣的方式主动给用户发一条消息。")
-        sb.appendLine()
-        sb.appendLine("重要规则：")
-        sb.appendLine("- 绝对不要复述上一轮的对话内容，要发新的话题或新的关心")
-        sb.appendLine("- 如果上一轮已经说过类似的话，这次换一个完全不同的角度")
-        sb.appendLine("- 不要提及你是在定时发消息，要像自然想起对方一样")
-        sb.appendLine("- 绝对不要提及任何数据来源、工具使用、传感器数据、位置服务、应用使用统计等技术细节")
+        sb.appendLine("请以自然、关心的方式主动给用户发一条全新的消息。")
+        sb.appendLine("- 绝对不要复述上一轮对话，要发新话题或新的关心")
+        sb.appendLine("- 如需了解用户此刻在干什么，可调用查岗工具（屏幕使用时长、今日通知、当前前台应用）查询")
+        sb.appendLine("- 绝对不要提及任何数据来源、工具使用、传感器、位置服务、应用使用统计等技术细节")
         sb.appendLine("- 不要说\"根据xxx\"、\"我注意到xxx数据\"之类暴露信息来源的话")
-        sb.appendLine("- 直接以朋友聊天的语气开口，就像你突然想到了什么想跟对方说")
-        sb.appendLine("- 不要使用任何XML标签、思考标记或特殊格式，只输出纯文本的消息内容")
-        sb.appendLine("- 这是主动发消息：上一轮对话已经彻底结束，不要复盘上一轮，不要纠结该不该说话")
-        sb.appendLine("- 你唯一要做的是：先调用查岗工具（屏幕使用时长、今日通知、当前前台应用），看用户此刻在干什么，然后据此主动发一条全新的、自然的消息")
-        sb.appendLine("- 不要输出思考过程、推理过程或内部独白，只输出你想对用户说的话")
+        sb.appendLine("- 不要输出思考过程、推理过程或内部独白，只输出想对用户说的话")
+        sb.appendLine("- 没什么好说的就回复 [PASS] 即可，不要强行找话题")
         return sb.toString()
+    }        return sb.toString()
     }
 
 
@@ -584,6 +502,15 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 // 构建上下文
                 val idleMinutes = runCatching { val last = proactiveMessageService.getLastMessageTimeMs(); if (last > 0) ((System.currentTimeMillis() - last) / 60000L).toInt() else Int.MAX_VALUE }.getOrDefault(Int.MAX_VALUE)
 
+                // 活跃检测：用户最近 3 分钟内刚发过消息，跳过主动消息（防打扰/重复上下文）
+                // 定时唤醒（isScheduledWake）是用户明确设置的提醒，即使刚聊过也要照常触发
+                if (!isFromDeviceEvent && !isScheduledWake && idleMinutes < 3) {
+                    Log.d(TAG, "用户最近活跃（${idleMinutes}分钟前），跳过主动消息")
+                    ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
+                    stopSelf()
+                    return@launch
+                }
+
                 // 如果有设备事件上下文（激进模式），使用它替代常规上下文；否则使用常规上下文
                 val contextStr = if (isFromDeviceEvent && deviceEventContext != null) {
                     deviceEventContext
@@ -599,11 +526,11 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 }
 
                 // 获取历史消息（先过滤掉悬空的工具调用消息，避免 tool_use 结构不完整触发 400）
+                // 主动消息场景：强制限制到最近 10 条，避免 contextMessageSize=0（默认）时全量塞入导致上下文过长卡壳
                 val historyMessages = filterInvalidToolMessages(
                     conversation?.currentMessages?.let {
-                        if (assistant.contextMessageSize > 0) {
-                            it.takeLast(assistant.contextMessageSize)
-                        } else it
+                        val limit = if (assistant.contextMessageSize > 0) assistant.contextMessageSize.coerceAtMost(10) else 10
+                        it.takeLast(limit)
                     } ?: emptyList()
                 )
 
@@ -937,13 +864,7 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 appendLine()
                 appendLine()
                 appendLine("## 主动消息触发（定时触发）")
-                appendLine("距离用户上次回复已过去 $idleMinutes 分钟。")
-                appendLine("这是定时触发的主动消息，不是设备事件触发。")
-                appendLine("上一轮对话已经彻底结束，不要复盘上一轮，不要纠结该不该说话。")
-                appendLine("直接查岗看用户在干什么，然后主动发一条全新的、自然的消息。")
-                appendLine("绝对不要复述上一轮的对话内容，要发新的话题或新的关心。")
-                appendLine("不要输出思考过程、推理过程或内部独白，只输出你想对用户说的话。")
-                appendLine("如果你觉得现在没什么好说的，或者没什么有趣的话题，请只回复 [PASS] 即可。")
+                appendLine("距离用户上次回复已过去 $idleMinutes 分钟，这是定时触发的主动消息，上一轮对话已经结束。")
                 appendLine("[JUMP] 标记不会展示给用户，仅用于触发屏幕跳转。")
                 // 注入完整上下文（定位、前台app、app使用、通知、电量、健康等）
                 if (!deviceEventContext.isNullOrBlank()) {
@@ -1045,23 +966,8 @@ class ProactiveMessageTriggerService : android.app.Service(), KoinComponent {
                 addAll(systemTools.getTools(systemToolsOptions))
             }
 
-            // MCP 工具
-            mcpManager.getAllAvailableTools().forEach { (serverId, tool) ->
-                add(
-                    Tool(
-                        name = ToolNaming.buildMcpToolName(serverId, tool.name),
-                        description = tool.description ?: "",
-                        parameters = { tool.inputSchema },
-                        needsApproval = tool.needsApproval,
-                        execute = {
-                            mcpManager.callTool(serverId, tool.name, it.jsonObject)
-                        },
-                    )
-                )
-            }
-
-            // 插件工具
-            addAll(pluginToolProvider.getTools())
+            // 主动消息场景：不注入 MCP/插件工具，避免工具过多导致模型乱用或卡壳。
+            // 查岗所需的（位置、通知、应用使用、电量、时间）等系统工具已在上方注入。
         }
     }
 
