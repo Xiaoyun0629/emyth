@@ -85,16 +85,14 @@ class ScreenCaptureService : Service() {
     }
 
     private fun startForegroundCompat() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceCompat.startForeground(
-                this,
-                NOTIFICATION_ID,
-                buildNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, buildNotification())
-        }
+        // 通用写法：ServiceCompat 内部处理版本差异。
+        // API 29+ 会用 mediaProjection 类型（MediaProjection 硬性要求），API 29- 忽略该类型。
+        ServiceCompat.startForeground(
+            this,
+            NOTIFICATION_ID,
+            buildNotification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        )
     }
 
     private fun buildNotification(): Notification {
