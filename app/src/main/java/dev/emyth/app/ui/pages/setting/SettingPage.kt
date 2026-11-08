@@ -278,6 +278,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text("系统工具") },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingVoiceWake) },
+                        leadingContent = { Icon(HugeIcons.Mic01, null) },
+                        supportingContent = { Text("喊唤醒词，弹出助手并播放回应音频") },
+                        headlineContent = { Text("语音唤醒") },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.SettingProactiveMessage) },
                         leadingContent = { Icon(HugeIcons.WavingHand01, null) },
                         supportingContent = { Text("AI 在设定间隔内主动发消息，有记忆有上下文") },

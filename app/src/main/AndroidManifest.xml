@@ -101,6 +101,18 @@
       android:exported="false"
       android:excludeFromRecents="true"
       android:theme="@style/Theme.Rikkahub" />
+
+    <activity
+      android:name=".ui.activity.VoiceWakeEnrollActivity"
+      android:exported="false"
+      android:theme="@style/Theme.Rikkahub" />
+
+    <activity
+      android:name=".ui.activity.WakeUpOverlayActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <activity
       android:name=".RouteActivity"
       android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
@@ -277,6 +289,12 @@
       android:name=".data.service.ScreenCaptureService"
       android:exported="false"
       android:foregroundServiceType="mediaProjection" />
+
+    <!-- Voice Wake Service (语音唤醒：持续录音监听唤醒词) -->
+    <service
+      android:name=".data.service.VoiceWakeService"
+      android:exported="false"
+      android:foregroundServiceType="microphone" />
 
     <!-- Supabase Sync Receiver -->
     <receiver
