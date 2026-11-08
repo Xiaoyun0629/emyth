@@ -35,7 +35,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import dev.emyth.app.data.model.Avatar
 import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.datastore.getCurrentAssistant
