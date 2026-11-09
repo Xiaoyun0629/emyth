@@ -310,7 +310,8 @@ private fun ChatListNormal(
                 val msg = node.currentMessage
                 val text = msg.toText().trim()
                 !(msg.role == MessageRole.ASSISTANT && text == "[SKIP]") &&
-                !(msg.role == MessageRole.USER && text.contains("[主动消息上下文]"))
+                !(msg.role == MessageRole.USER && text.contains("[主动消息上下文]")) &&
+                !(msg.role == MessageRole.SYSTEM && text.contains("[语音唤醒]"))
             }
         }
 

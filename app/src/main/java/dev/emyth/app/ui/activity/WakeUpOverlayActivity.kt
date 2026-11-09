@@ -157,7 +157,7 @@ class WakeUpOverlayActivity : ComponentActivity() {
                 val conv = repo.getConversationById(recent.first().id) ?: return@launch
                 val wakeMsg = UIMessage(
                     role = MessageRole.SYSTEM,
-                    parts = listOf(UIMessagePart.Text("（系统提示）用户刚刚通过语音唤醒叫醒了你，可以主动回应一句。"))
+                    parts = listOf(UIMessagePart.Text("[语音唤醒]用户刚刚通过语音唤醒叫醒了你，可以主动回应一句。"))
                 )
                 repo.updateConversation(conv.copy(messageNodes = conv.messageNodes + MessageNode.of(wakeMsg)))
             } catch (e: Exception) {
