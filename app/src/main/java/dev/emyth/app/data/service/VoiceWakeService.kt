@@ -36,7 +36,7 @@ class VoiceWakeService : Service() {
         const val NOTIFICATION_ID = 20007
         private const val TAG = "VoiceWakeService"
         /** DTW 距离阈值，命中即唤醒（MFCC 归一化距离，越小越像，后续可调） */
-        private const val THRESHOLD = 6.0
+        private const val THRESHOLD = 12.0
         private const val COOLDOWN_MS = 5000L
 
         fun start(context: Context) {
@@ -138,6 +138,9 @@ class VoiceWakeService : Service() {
         val frames = WakeWordDsp.extract(samples)
         if (frames.size < 3) return
         val dist = WakeWordDsp.dtwDistance(tpl, frames)
+        if (dist < 15.0) {
+            Log.i(TAG, "检测距离 dist=$dist（当前阈值 $THRESHOLD）")
+        }
         if (dist < THRESHOLD) {
             val now = System.currentTimeMillis()
             if (now - lastTriggerAt > COOLDOWN_MS) {
