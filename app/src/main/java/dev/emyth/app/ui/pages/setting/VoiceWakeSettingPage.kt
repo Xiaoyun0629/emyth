@@ -46,6 +46,7 @@ fun VoiceWakeSettingPage() {
     var enabled by remember { mutableStateOf(VoiceWakeStore.isEnabled(context)) }
     var responsePaths by remember { mutableStateOf(VoiceWakeStore.getResponsePaths(context)) }
     var hasTemplate by remember { mutableStateOf(VoiceWakeStore.hasTemplate(context)) }
+    var logs by remember { mutableStateOf(VoiceWakeStore.getLogs(context)) }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -143,6 +144,37 @@ fun VoiceWakeSettingPage() {
                         }
                         Spacer(Modifier.height(4.dp))
                     }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("运行日志", fontSize = 16.sp)
+                    Row {
+                        TextButton(onClick = { logs = VoiceWakeStore.getLogs(context) }) {
+                            Text("刷新")
+                        }
+                        TextButton(onClick = {
+                            VoiceWakeStore.clearLogs(context)
+                            logs = VoiceWakeStore.getLogs(context)
+                        }) {
+                            Text("清空")
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                if (logs.isBlank()) {
+                    Text("暂无日志", fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                } else {
+                    Text(logs, fontSize = 11.sp, lineHeight = 16.sp)
                 }
             }
         }

@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import dev.emyth.app.data.wake.VoiceWakeStore
 import dev.emyth.app.data.wake.WakeWordDsp
 import java.io.File
@@ -52,6 +53,7 @@ class VoiceWakeEnrollActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             Column(
                 modifier = Modifier.fillMaxSize().padding(32.dp),

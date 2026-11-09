@@ -7,6 +7,9 @@
 package dev.emyth.app.data.wake
 
 import android.content.Context
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 语音唤醒的持久化存储：开关、唤醒词模板路径、回应音频列表。
@@ -18,6 +21,7 @@ object VoiceWakeStore {
     private const val KEY_ENABLED = "enabled"
     private const val KEY_TEMPLATE = "template_path"
     private const val KEY_RESPONSES = "response_paths"
+    private const val KEY_LOGS = "logs"
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -49,6 +53,25 @@ object VoiceWakeStore {
 
     fun clearResponses(ctx: Context) {
         prefs(ctx).edit().remove(KEY_RESPONSES).apply()
+    }
+
+    /** 追加一条日志（带时间戳），保留最近 50 条。 */
+    fun addLog(ctx: Context, message: String) {
+        try {
+            val ts = SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val entry = "[$ts] $message"
+            val old = prefs(ctx).getString(KEY_LOGS, "") ?: ""
+            val list = (listOf(entry) + old.split("\n").filter { it.isNotBlank() }).take(50)
+            prefs(ctx).edit().putString(KEY_LOGS, list.joinToString("\n")).apply()
+        } catch (e: Exception) {
+        }
+    }
+
+    /** 读日志（最新在前）。 */
+    fun getLogs(ctx: Context): String = prefs(ctx).getString(KEY_LOGS, "") ?: ""
+
+    fun clearLogs(ctx: Context) {
+        prefs(ctx).edit().remove(KEY_LOGS).apply()
     }
 
     fun hasTemplate(ctx: Context): Boolean = getTemplatePath(ctx).isNotBlank()

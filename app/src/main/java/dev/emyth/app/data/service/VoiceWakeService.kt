@@ -57,12 +57,14 @@ class VoiceWakeService : Service() {
     private var running = false
     private var recordThread: Thread? = null
     private var lastTriggerAt = 0L
+    private var lastLogAt = 0L
     private var template: List<DoubleArray>? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundCompat()
+        VoiceWakeStore.addLog(this, "监听服务启动")
         startRecording()
         return START_STICKY
     }
@@ -73,10 +75,12 @@ class VoiceWakeService : Service() {
         val tpl = WakeWordDsp.loadTemplate(File(tplPath))
         if (tpl.isEmpty()) {
             Log.w(TAG, "没有唤醒词模板，服务停止")
+            VoiceWakeStore.addLog(this, "没有唤醒词模板，服务停止（请先录唤醒词）")
             stopSelf()
             return
         }
         template = tpl
+        VoiceWakeStore.addLog(this, "已加载唤醒词模板（${tpl.size} 帧），开始监听")
         running = true
         recordThread = Thread(::recordLoop, "VoiceWakeRecord")
         recordThread?.start()
@@ -98,6 +102,7 @@ class VoiceWakeService : Service() {
             )
             audioRecord = record
             record.startRecording()
+            VoiceWakeStore.addLog(this@VoiceWakeService, "麦克风录音已启动")
 
             // 环形窗口：最近 2 秒
             val windowSize = WakeWordDsp.SAMPLE_RATE * 2
@@ -123,6 +128,7 @@ class VoiceWakeService : Service() {
             record.release()
         } catch (e: Exception) {
             Log.e(TAG, "recordLoop error", e)
+            VoiceWakeStore.addLog(this@VoiceWakeService, "录音异常：${e.message}")
         }
     }
 
@@ -138,14 +144,19 @@ class VoiceWakeService : Service() {
         val frames = WakeWordDsp.extract(samples)
         if (frames.size < 3) return
         val sim = WakeWordDsp.dtwSimilarity(tpl, frames)
-        if (sim > 0.70) {
-            Log.i(TAG, "检测相似度 sim=$sim（当前阈值 $THRESHOLD）")
+        if (sim > 0.60) {
+            val now = System.currentTimeMillis()
+            if (now - lastLogAt > 1500) {
+                lastLogAt = now
+                VoiceWakeStore.addLog(this@VoiceWakeService, "检测到声音，相似度 %.2f（阈值 $THRESHOLD）".format(sim))
+            }
         }
         if (sim > THRESHOLD) {
             val now = System.currentTimeMillis()
             if (now - lastTriggerAt > COOLDOWN_MS) {
                 lastTriggerAt = now
                 Log.i(TAG, "唤醒词命中，相似度=$sim")
+                VoiceWakeStore.addLog(this@VoiceWakeService, "✅ 唤醒词命中，相似度 %.2f".format(sim))
                 triggerWake()
             }
         }
@@ -167,6 +178,7 @@ class VoiceWakeService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        VoiceWakeStore.addLog(this, "监听服务停止")
         stopRecording()
     }
 
