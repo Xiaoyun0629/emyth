@@ -36,7 +36,7 @@ class VoiceWakeService : Service() {
         const val NOTIFICATION_ID = 20007
         private const val TAG = "VoiceWakeService"
         /** DTW 相似度阈值，命中即唤醒（余弦相似度 0~1，越高越像，后续可调） */
-        private const val THRESHOLD = 0.72
+        private const val THRESHOLD = 0.75
         private const val COOLDOWN_MS = 5000L
 
         fun start(context: Context) {

@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import dev.emyth.app.ui.components.ui.toComposeColor
 import coil3.compose.AsyncImage
 import dev.emyth.app.data.model.Avatar
 import dev.emyth.app.data.datastore.SettingsStore
@@ -73,15 +76,23 @@ class WakeUpOverlayActivity : ComponentActivity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var finished = false
+    private val subtitleText = mutableStateOf("")
+    private val subtitleColor = mutableStateOf(0xFFFFFFFFL)
+    private val nameColor = mutableStateOf(0xFFFFFFFFL)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val (name, avatar) = loadAssistant()
+        subtitleColor.value = VoiceWakeStore.getSubtitleColor(this)
+        nameColor.value = VoiceWakeStore.getNameColor(this)
         setContent {
             WakeUpScreen(
                 name = name,
                 avatar = avatar,
+                subtitleText = subtitleText.value,
+                subtitleColor = subtitleColor.value.toComposeColor(),
+                nameColor = nameColor.value.toComposeColor(),
                 onDismiss = { dismiss() }
             )
         }
@@ -106,6 +117,7 @@ class WakeUpOverlayActivity : ComponentActivity() {
             return
         }
         val path = paths.random()
+        subtitleText.value = VoiceWakeStore.getResponseText(this, path) ?: ""
         try {
             val mp = MediaPlayer()
             mediaPlayer = mp
@@ -174,7 +186,14 @@ class WakeUpOverlayActivity : ComponentActivity() {
 }
 
 @androidx.compose.runtime.Composable
-private fun WakeUpScreen(name: String, avatar: Avatar, onDismiss: () -> Unit) {
+private fun WakeUpScreen(
+    name: String,
+    avatar: Avatar,
+    subtitleText: String,
+    subtitleColor: Color,
+    nameColor: Color,
+    onDismiss: () -> Unit
+) {
     val transition = rememberInfiniteTransition(label = "wake")
     val scale by transition.animateFloat(
         initialValue = 1f,
@@ -192,7 +211,7 @@ private fun WakeUpScreen(name: String, avatar: Avatar, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Transparent)
+            .background(Color(0xCC000000))
             .clickable(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
@@ -243,11 +262,19 @@ private fun WakeUpScreen(name: String, avatar: Avatar, onDismiss: () -> Unit) {
             }
             Text(
                 text = name,
-                color = Color.White,
+                color = nameColor,
                 fontSize = 20.sp,
                 modifier = Modifier
                     .padding(top = 18.dp)
             )
+            if (subtitleText.isNotBlank()) {
+                Text(
+                    text = subtitleText,
+                    color = subtitleColor,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

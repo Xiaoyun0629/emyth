@@ -11,8 +11,11 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -31,10 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.emyth.app.data.service.VoiceWakeService
+import dev.emyth.app.ui.components.ui.ColorPickerDialog
+import dev.emyth.app.ui.components.ui.toComposeColor
 import dev.emyth.app.data.wake.VoiceWakeStore
 import dev.emyth.app.ui.activity.VoiceWakeEnrollActivity
 import java.io.File
@@ -47,6 +54,10 @@ fun VoiceWakeSettingPage() {
     var responsePaths by remember { mutableStateOf(VoiceWakeStore.getResponsePaths(context)) }
     var hasTemplate by remember { mutableStateOf(VoiceWakeStore.hasTemplate(context)) }
     var logs by remember { mutableStateOf(VoiceWakeStore.getLogs(context)) }
+    var subtitleColor by remember { mutableStateOf(VoiceWakeStore.getSubtitleColor(context)) }
+    var nameColor by remember { mutableStateOf(VoiceWakeStore.getNameColor(context)) }
+    var showSubtitlePicker by remember { mutableStateOf(false) }
+    var showNamePicker by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -152,6 +163,32 @@ fun VoiceWakeSettingPage() {
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
+                Text("外观", fontSize = 16.sp)
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { showSubtitlePicker = true },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("字幕颜色", fontSize = 14.sp)
+                    Box(Modifier.size(26.dp).background(subtitleColor.toComposeColor(), CircleShape))
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { showNamePicker = true },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("名称颜色", fontSize = 14.sp)
+                    Box(Modifier.size(26.dp).background(nameColor.toComposeColor(), CircleShape))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -178,6 +215,35 @@ fun VoiceWakeSettingPage() {
                 }
             }
         }
+    }
+
+    if (showSubtitlePicker) {
+        ColorPickerDialog(
+            initialColor = subtitleColor,
+            defaultColor = Color.White,
+            onConfirm = { c ->
+                if (c != null) {
+                    subtitleColor = c
+                    VoiceWakeStore.setSubtitleColor(context, c)
+                }
+                showSubtitlePicker = false
+            },
+            onDismiss = { showSubtitlePicker = false }
+        )
+    }
+    if (showNamePicker) {
+        ColorPickerDialog(
+            initialColor = nameColor,
+            defaultColor = Color.White,
+            onConfirm = { c ->
+                if (c != null) {
+                    nameColor = c
+                    VoiceWakeStore.setNameColor(context, c)
+                }
+                showNamePicker = false
+            },
+            onDismiss = { showNamePicker = false }
+        )
     }
 }
 

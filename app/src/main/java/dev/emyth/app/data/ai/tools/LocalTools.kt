@@ -400,6 +400,7 @@ class LocalTools(
                 val file = File(dir, "$filename.$ext")
                 file.outputStream().use { out -> out.write(data) }
                 VoiceWakeStore.addResponsePath(context, file.absolutePath)
+                VoiceWakeStore.setResponseText(context, file.absolutePath, text)
 
                 listOf(UIMessagePart.Text(
                     buildJsonObject {

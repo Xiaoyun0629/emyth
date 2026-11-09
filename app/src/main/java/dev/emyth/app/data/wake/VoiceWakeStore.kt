@@ -7,6 +7,12 @@
 package dev.emyth.app.data.wake
 
 import android.content.Context
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,6 +28,9 @@ object VoiceWakeStore {
     private const val KEY_TEMPLATE = "template_path"
     private const val KEY_RESPONSES = "response_paths"
     private const val KEY_LOGS = "logs"
+    private const val KEY_RESPONSE_TEXTS = "response_texts"
+    private const val KEY_SUBTITLE_COLOR = "subtitle_color"
+    private const val KEY_NAME_COLOR = "name_color"
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -72,6 +81,50 @@ object VoiceWakeStore {
 
     fun clearLogs(ctx: Context) {
         prefs(ctx).edit().remove(KEY_LOGS).apply()
+    }
+
+    /** 字幕文字：音频路径 -> 合成时的文字。 */
+    fun getResponseText(ctx: Context, path: String): String? =
+        getResponseTextMap(ctx)[path]
+
+    private fun getResponseTextMap(ctx: Context): Map<String, String> {
+        val raw = prefs(ctx).getString(KEY_RESPONSE_TEXTS, "") ?: ""
+        if (raw.isBlank()) return emptyMap()
+        return try {
+            Json.parseToJsonElement(raw).jsonObject.mapValues { (_, v) -> v.jsonPrimitive.content }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    fun setResponseText(ctx: Context, path: String, text: String) {
+        val map = getResponseTextMap(ctx).toMutableMap()
+        map[path] = text
+        val json = buildJsonObject { map.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }
+        prefs(ctx).edit().putString(KEY_RESPONSE_TEXTS, json.toString()).apply()
+    }
+
+    fun removeResponseText(ctx: Context, path: String) {
+        val map = getResponseTextMap(ctx).toMutableMap()
+        map.remove(path)
+        val json = buildJsonObject { map.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }
+        prefs(ctx).edit().putString(KEY_RESPONSE_TEXTS, json.toString()).apply()
+    }
+
+    /** 字幕颜色，ARGB Long，默认白色 0xFFFFFFFF。 */
+    fun getSubtitleColor(ctx: Context): Long =
+        prefs(ctx).getLong(KEY_SUBTITLE_COLOR, 0xFFFFFFFF)
+
+    fun setSubtitleColor(ctx: Context, color: Long) {
+        prefs(ctx).edit().putLong(KEY_SUBTITLE_COLOR, color).apply()
+    }
+
+    /** 助手名称颜色，ARGB Long，默认白色 0xFFFFFFFF。 */
+    fun getNameColor(ctx: Context): Long =
+        prefs(ctx).getLong(KEY_NAME_COLOR, 0xFFFFFFFF)
+
+    fun setNameColor(ctx: Context, color: Long) {
+        prefs(ctx).edit().putLong(KEY_NAME_COLOR, color).apply()
     }
 
     fun hasTemplate(ctx: Context): Boolean = getTemplatePath(ctx).isNotBlank()
