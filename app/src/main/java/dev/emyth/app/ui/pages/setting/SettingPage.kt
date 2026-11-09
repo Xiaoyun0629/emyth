@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +30,7 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -35,6 +38,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -147,6 +152,10 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
             contentPadding = innerPadding + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item("settingSearch") {
+                SettingSearchBar(navController)
+            }
+
             if (settings.isNotConfigured()) {
                 item {
                     ProviderConfigWarningCard(navController)
@@ -446,6 +455,73 @@ private fun ProviderConfigWarningCard(navController: Navigator) {
                 }
             ) {
                 Text(stringResource(R.string.setting_page_config))
+            }
+        }
+    }
+}
+
+
+private class SearchEntry(val title: String, val kws: List<String>, val go: () -> Unit)
+
+@Composable
+private fun SettingSearchBar(navController: Navigator) {
+    val context = LocalContext.current
+    var query by remember { mutableStateOf("") }
+    val entries = remember {
+        listOf(
+            SearchEntry("显示设置", listOf("显示", "外观", "主题", "颜色", "壁纸", "气泡", "头像", "玻璃", "模糊"), { navController.navigate(Screen.SettingDisplay) }),
+            SearchEntry("插件管理", listOf("插件", "plugin", "导入"), { navController.navigate(Screen.SettingPlugins) }),
+            SearchEntry("语音收藏", listOf("语音收藏", "收藏", "回听", "语音"), { navController.navigate(Screen.VoiceFavorite) }),
+            SearchEntry("安全设置", listOf("安全", "工具确认", "自动批准", "拦截", "权限"), { navController.navigate(Screen.SettingSecurity) }),
+            SearchEntry("助手", listOf("助手", "assistant", "人设", "本地工具"), { navController.navigate(Screen.Assistant) }),
+            SearchEntry("扩展", listOf("扩展", "extension"), { navController.navigate(Screen.Extensions) }),
+            SearchEntry("默认模型", listOf("模型", "model", "默认模型"), { navController.navigate(Screen.SettingModels) }),
+            SearchEntry("供应商", listOf("供应商", "provider", "api", "key", "接口", "模型服务"), { navController.navigate(Screen.SettingProvider) }),
+            SearchEntry("搜索服务", listOf("搜索", "search", "联网", "搜索服务"), { navController.navigate(Screen.SettingSearch) }),
+            SearchEntry("语音服务", listOf("语音", "tts", "朗读", "说话", "合成", "声音"), { navController.navigate(Screen.SettingSpeech) }),
+            SearchEntry("MCP", listOf("mcp", "工具"), { navController.navigate(Screen.SettingMcp) }),
+            SearchEntry("Web 服务器", listOf("web", "服务器", "网页", "局域网"), { navController.navigate(Screen.SettingWeb) }),
+            SearchEntry("系统工具", listOf("系统工具", "位置", "通知", "日历", "闹钟", "工具", "定位"), { navController.navigate(Screen.SettingSystemTools) }),
+            SearchEntry("语音唤醒", listOf("唤醒", "唤醒词", "语音唤醒"), { navController.navigate(Screen.SettingVoiceWake) }),
+            SearchEntry("主动消息", listOf("主动消息", "主动发消息", "主动"), { navController.navigate(Screen.SettingProactiveMessage) }),
+            SearchEntry("微信 Bot", listOf("微信", "weixin", "bot", "机器人", "微信机器人"), { navController.navigate(Screen.SettingWeixinBot) }),
+            SearchEntry("QQ Bot", listOf("qq", "bot", "qq机器人"), { navController.navigate(Screen.SettingQqBot) }),
+            SearchEntry("工作流", listOf("工作流", "workflow", "自动化", "触发器", "任务"), { navController.navigate(Screen.Workflows) }),
+            SearchEntry("健康数据", listOf("健康", "心率", "睡眠", "步数", "手环", "gadgetbridge"), { navController.navigate(Screen.Health) }),
+            SearchEntry("备份", listOf("备份", "backup", "恢复", "导出", "导入"), { navController.navigate(Screen.Backup) }),
+            SearchEntry("聊天记录存储", listOf("存储", "文件", "聊天记录", "占用", "空间"), { navController.navigate(Screen.SettingFiles) }),
+            SearchEntry("关于", listOf("关于", "about", "版本"), { navController.navigate(Screen.SettingAbout) }),
+            SearchEntry("文档", listOf("文档", "github", "教程", "帮助"), { context.openUrl("https://github.com/Xiaoyun0629/emyth") }),
+            SearchEntry("请求日志", listOf("日志", "log", "请求"), { navController.navigate(Screen.Log) }),
+            SearchEntry("安全审计日志", listOf("审计", "安全日志", "安全事件"), { navController.navigate(Screen.SecurityAudit) }),
+            SearchEntry("捐赠", listOf("捐赠", "赞助", "donate", "打赏"), { navController.navigate(Screen.SettingDonate) }),
+        )
+    }
+    Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("搜索设置项…") },
+            leadingIcon = { Icon(HugeIcons.GlobalSearch, null) },
+            singleLine = true,
+        )
+        if (query.isNotBlank()) {
+            val results = entries.filter { e ->
+                e.title.contains(query, ignoreCase = true) || e.kws.any { it.contains(query, ignoreCase = true) }
+            }
+            Spacer(Modifier.height(8.dp))
+            CardGroup {
+                if (results.isEmpty()) {
+                    item(headlineContent = { Text("没找到「$query」相关的设置") })
+                } else {
+                    results.forEach { e ->
+                        item(
+                            onClick = { query = ""; e.go() },
+                            headlineContent = { Text(e.title) },
+                        )
+                    }
+                }
             }
         }
     }
