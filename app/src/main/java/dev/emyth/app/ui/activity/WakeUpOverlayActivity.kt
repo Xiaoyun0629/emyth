@@ -111,17 +111,17 @@ class WakeUpOverlayActivity : ComponentActivity() {
             mediaPlayer = mp
             mp.setDataSource(path)
             mp.setOnCompletionListener { openEmyth() }
-            mp.setOnErrorListener { _, _, _ -> openEmyth(); true }
+            mp.setOnErrorListener { _, _, _ -> scheduleOpenEmyth(); true }
             mp.prepare()
             mp.start()
         } catch (e: Exception) {
-            openEmyth()
+            scheduleOpenEmyth()
         }
     }
 
     private fun scheduleOpenEmyth() {
         // 无音频时稍作停留再打开，避免一闪而过
-        window.decorView.postDelayed({ openEmyth() }, 800L)
+        window.decorView.postDelayed({ openEmyth() }, 2500L)
     }
 
     private fun openEmyth() {
@@ -192,7 +192,7 @@ private fun WakeUpScreen(name: String, avatar: Avatar, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xCC000000))
+            .background(Color.Transparent)
             .clickable(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
