@@ -40,7 +40,15 @@ import coil3.compose.AsyncImage
 import dev.emyth.app.data.model.Avatar
 import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.datastore.getCurrentAssistant
+import dev.emyth.app.data.model.MessageNode
+import dev.emyth.app.data.repository.ConversationRepository
 import dev.emyth.app.data.wake.VoiceWakeStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import me.rerere.ai.core.MessageRole
+import me.rerere.ai.ui.UIMessage
+import me.rerere.ai.ui.UIMessagePart
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.koin.java.KoinJavaComponent.getKoin
@@ -121,6 +129,7 @@ class WakeUpOverlayActivity : ComponentActivity() {
         finished = true
         runCatching { mediaPlayer?.release() }
         mediaPlayer = null
+        injectWakeNotification()
         try {
             val launch = packageManager.getLaunchIntentForPackage(packageName)
             if (launch != null) {
@@ -134,6 +143,27 @@ class WakeUpOverlayActivity : ComponentActivity() {
 
     private fun dismiss() {
         openEmyth()
+    }
+
+    /** 往最近的对话注入一条系统提示，告诉 AI 用户刚刚用语音唤醒叫醒了它。 */
+    private fun injectWakeNotification() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val store = getKoin().get<SettingsStore>()
+                val settings = store.settingsFlow.first()
+                val repo = getKoin().get<ConversationRepository>()
+                val recent = repo.getRecentConversations(settings.assistantId, limit = 1)
+                if (recent.isEmpty()) return@launch
+                val conv = repo.getConversationById(recent.first().id) ?: return@launch
+                val wakeMsg = UIMessage(
+                    role = MessageRole.SYSTEM,
+                    parts = listOf(UIMessagePart.Text("（系统提示）用户刚刚通过语音唤醒叫醒了你，可以主动回应一句。"))
+                )
+                repo.updateConversation(conv.copy(messageNodes = conv.messageNodes + MessageNode.of(wakeMsg)))
+            } catch (e: Exception) {
+                // 注入失败不阻塞
+            }
+        }
     }
 
     override fun onDestroy() {
