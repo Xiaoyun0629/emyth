@@ -22,10 +22,14 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -105,7 +109,16 @@ private fun AssistantLocalToolContent(
             .imePadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        var q by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = q,
+            onValueChange = { q = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("搜索工具…") },
+            singleLine = true
+        )
         CardGroup {
+            if (q.isBlank() || q.contains("javascript", ignoreCase = true) || q.contains("js", ignoreCase = true) || q.contains("脚本", ignoreCase = true) || q.contains("代码", ignoreCase = true) || q.contains("引擎", ignoreCase = true)) {
             item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_javascript_engine_title))
@@ -120,6 +133,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("时间", ignoreCase = true) || q.contains("日期", ignoreCase = true) || q.contains("time", ignoreCase = true) || q.contains("时区", ignoreCase = true) || q.contains("星期", ignoreCase = true)) {
             item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_time_info_title))
@@ -134,6 +149,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("剪贴板", ignoreCase = true) || q.contains("clipboard", ignoreCase = true) || q.contains("复制", ignoreCase = true) || q.contains("粘贴", ignoreCase = true)) {
             item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_clipboard_title))
@@ -148,6 +165,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("语音", ignoreCase = true) || q.contains("tts", ignoreCase = true) || q.contains("朗读", ignoreCase = true) || q.contains("说话", ignoreCase = true) || q.contains("合成", ignoreCase = true)) {
             item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_tts_title))
@@ -162,6 +181,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("通话", ignoreCase = true) || q.contains("电话", ignoreCase = true) || q.contains("来电", ignoreCase = true) || q.contains("语音通话", ignoreCase = true)) {
             item(
                 headlineContent = { Text("主动语音通话") },
                 supportingContent = { Text("允许 AI 在合适时机主动发起语音通话, 弹出来电界面邀请你接听。开启后 AI 可能会在觉得语音更合适时打来电话") },
@@ -172,6 +193,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("询问", ignoreCase = true) || q.contains("ask", ignoreCase = true) || q.contains("提问", ignoreCase = true) || q.contains("反问", ignoreCase = true)) {
             item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_ask_user_title))
@@ -186,6 +209,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("日历", ignoreCase = true) || q.contains("calendar", ignoreCase = true) || q.contains("日程", ignoreCase = true)) {
             item(
                 headlineContent = { Text("日历读写") },
                 supportingContent = { Text("允许AI读取、创建和删除日历事件，需要日历权限") },
@@ -196,6 +221,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("跳过", ignoreCase = true) || q.contains("skip", ignoreCase = true) || q.contains("回复", ignoreCase = true)) {
             item(
                 headlineContent = { Text("允许跳过回复") },
                 supportingContent = { Text("允许AI在认为无需回复时跳过，回复 [SKIP] 的消息将被隐藏") },
@@ -213,6 +240,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("工作流", ignoreCase = true) || q.contains("workflow", ignoreCase = true) || q.contains("自动化", ignoreCase = true) || q.contains("触发器", ignoreCase = true)) {
             item(
                 headlineContent = { Text("工作流") },
                 supportingContent = { Text("开启后 AI 可创建事件驱动的自动化工作流（触发器+条件->动作）") },
@@ -230,6 +259,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("屏幕", ignoreCase = true) || q.contains("点击", ignoreCase = true) || q.contains("滑动", ignoreCase = true) || q.contains("截图", ignoreCase = true) || q.contains("无障碍", ignoreCase = true) || q.contains("screen", ignoreCase = true)) {
             item(
                 headlineContent = { Text("屏幕自动化") },
                 supportingContent = { Text("点击/滑动/输入/读取界面元素/截图。需在系统设置->无障碍中启用Emyth") },
@@ -247,6 +278,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("ssh", ignoreCase = true) || q.contains("远程", ignoreCase = true) || q.contains("服务器", ignoreCase = true) || q.contains("命令", ignoreCase = true)) {
             item(
                 headlineContent = { Text("SSH 远程连接") },
                 supportingContent = { Text("远程执行命令、SFTP 上传下载、保存主机凭据") },
@@ -264,6 +297,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("配置", ignoreCase = true) || q.contains("configure", ignoreCase = true) || q.contains("mcp", ignoreCase = true)) {
             item(
                 headlineContent = { Text("全局配置") },
                 supportingContent = { Text("让 AI 帮你配置 MCP、设置开关等，无需手动操作") },
@@ -281,6 +316,8 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
+            if (q.isBlank() || q.contains("生图", ignoreCase = true) || q.contains("图片", ignoreCase = true) || q.contains("画图", ignoreCase = true) || q.contains("图像", ignoreCase = true) || q.contains("image", ignoreCase = true) || q.contains("生成", ignoreCase = true)) {
             item(
                 headlineContent = { Text("生图") },
                 supportingContent = {
@@ -315,6 +352,7 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            }
         }
     }
 }
