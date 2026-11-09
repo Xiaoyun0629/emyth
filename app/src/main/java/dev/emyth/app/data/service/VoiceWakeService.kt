@@ -35,8 +35,8 @@ class VoiceWakeService : Service() {
     companion object {
         const val NOTIFICATION_ID = 20007
         private const val TAG = "VoiceWakeService"
-        /** DTW 距离阈值，命中即唤醒（MFCC 归一化距离，越小越像，后续可调） */
-        private const val THRESHOLD = 12.0
+        /** DTW 相似度阈值，命中即唤醒（余弦相似度 0~1，越高越像，后续可调） */
+        private const val THRESHOLD = 0.80
         private const val COOLDOWN_MS = 5000L
 
         fun start(context: Context) {
@@ -137,15 +137,15 @@ class VoiceWakeService : Service() {
         }
         val frames = WakeWordDsp.extract(samples)
         if (frames.size < 3) return
-        val dist = WakeWordDsp.dtwDistance(tpl, frames)
-        if (dist < 15.0) {
-            Log.i(TAG, "检测距离 dist=$dist（当前阈值 $THRESHOLD）")
+        val sim = WakeWordDsp.dtwSimilarity(tpl, frames)
+        if (sim > 0.70) {
+            Log.i(TAG, "检测相似度 sim=$sim（当前阈值 $THRESHOLD）")
         }
-        if (dist < THRESHOLD) {
+        if (sim > THRESHOLD) {
             val now = System.currentTimeMillis()
             if (now - lastTriggerAt > COOLDOWN_MS) {
                 lastTriggerAt = now
-                Log.i(TAG, "唤醒词命中，距离=$dist")
+                Log.i(TAG, "唤醒词命中，相似度=$sim")
                 triggerWake()
             }
         }
