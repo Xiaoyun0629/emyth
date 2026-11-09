@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import coil3.compose.AsyncImage
 import dev.emyth.app.data.model.Avatar
 import dev.emyth.app.data.datastore.SettingsStore
@@ -67,6 +68,7 @@ class WakeUpOverlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         val (name, avatar) = loadAssistant()
         setContent {
             WakeUpScreen(

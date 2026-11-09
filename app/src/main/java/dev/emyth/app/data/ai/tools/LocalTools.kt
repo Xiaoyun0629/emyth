@@ -47,6 +47,13 @@ import dev.emyth.app.service.VoiceCallService
 import dev.emyth.app.utils.readClipboardText
 import dev.emyth.app.utils.writeClipboardText
 import org.koin.java.KoinJavaComponent.getKoin
+import dev.emyth.app.data.datastore.getSelectedTTSProvider
+import dev.emyth.app.data.wake.VoiceWakeStore
+import kotlinx.coroutines.flow.toList
+import me.rerere.tts.provider.TTSManager
+import me.rerere.tts.model.TTSRequest
+import me.rerere.tts.model.AudioChunk
+import java.io.File
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.TextStyle
@@ -356,6 +363,55 @@ class LocalTools(
         )
     }
  
+    val addWakeResponseTool by lazy {
+        Tool(
+            name = "add_wake_response",
+            description = "用当前配置的语音合成一段回应音频，存到语音唤醒的回应音频库（唤醒后随机播放一段）。",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("text", buildJsonObject {
+                            put("type", "string")
+                            put("description", "要合成的话，比如「我在呢」")
+                        })
+                        put("filename", buildJsonObject {
+                            put("type", "string")
+                            put("description", "可选，保存的文件名（不含扩展名）")
+                        })
+                    },
+                    required = listOf("text")
+                )
+            },
+            execute = {
+                val text = it.jsonObject["text"]?.jsonPrimitive?.contentOrNull ?: error("text is required")
+                val filename = it.jsonObject["filename"]?.jsonPrimitive?.contentOrNull
+                    ?: "wake_${System.currentTimeMillis()}"
+
+                val store = getKoin().get<SettingsStore>()
+                val provider = store.settingsFlow.value.getSelectedTTSProvider()
+                    ?: error("没有配置语音合成，请先在语音设置里配好")
+
+                val chunks = TTSManager(context).generateSpeech(provider, TTSRequest(text)).toList()
+                if (chunks.isEmpty()) error("合成失败：没有返回音频")
+                val data = chunks.flatMap { c -> c.data.toList() }.toByteArray()
+                val ext = chunks.last().format.name.lowercase()
+
+                val dir = File(context.filesDir, "wake_responses").apply { mkdirs() }
+                val file = File(dir, "$filename.$ext")
+                file.outputStream().use { out -> out.write(data) }
+                VoiceWakeStore.addResponsePath(context, file.absolutePath)
+
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("success", true)
+                        put("file", file.name)
+                        put("size", data.size)
+                    }.toString()
+                ))
+            }
+        )
+    }
+
     val askUserTool by lazy {
         Tool(
             name = "ask_user",
@@ -1273,6 +1329,7 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.Tts)) {
             tools.add(ttsTool)
+            tools.add(addWakeResponseTool)
         }
         if (options.contains(LocalToolOption.RequestVoiceCall) && conversationId != null) {
             tools.add(createRequestVoiceCallTool(conversationId))
