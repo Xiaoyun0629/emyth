@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
@@ -155,7 +156,7 @@ fun VoiceWakeSettingPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("回应音频", fontSize = 16.sp)
-                    TextButton(onClick = { importLauncher.launch(arrayOf("audio/*")) }) {
+                    TextButton(onClick = { importLauncher.launch(arrayOf("audio/*", "application/octet-stream", "*/*")) }) {
                         Text("导入音频")
                     }
                 }
@@ -278,14 +279,21 @@ fun VoiceWakeSettingPage() {
 /** 把选中的音频复制到 app 内部目录，避免 SAF 权限过期。 */
 private fun importResponseAudio(context: Context, uri: Uri) {
     try {
-        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "audio_${System.currentTimeMillis()}.mp3"
+        var name = uri.lastPathSegment?.substringAfterLast('/') ?: ""
+        if (name.isBlank()) name = "audio_${System.currentTimeMillis()}"
+        // 部分 SAF provider 的 lastPathSegment 不含扩展名，补上 .mp3 兜底
+        if (!name.contains('.')) name += ".mp3"
         val dir = File(context.filesDir, "wake_responses").apply { mkdirs() }
         val dest = File(dir, name)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            dest.outputStream().use { output -> input.copyTo(output) }
+        val input = context.contentResolver.openInputStream(uri)
+        if (input == null) {
+            Log.e("VoiceWake", "无法打开音频流: $uri")
+            return
         }
+        input.use { it.copyTo(dest.outputStream()) }
         VoiceWakeStore.addResponsePath(context, dest.absolutePath)
+        Log.i("VoiceWake", "已导入音频: ${dest.name}")
     } catch (e: Exception) {
-        // 忽略单个失败
+        Log.e("VoiceWake", "导入音频失败", e)
     }
 }
