@@ -6,10 +6,13 @@
 
 package dev.emyth.app.ui.pages.setting
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -68,6 +71,19 @@ fun VoiceWakeSettingPage() {
         responsePaths = VoiceWakeStore.getResponsePaths(context)
     }
 
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            enabled = true
+            VoiceWakeStore.setEnabled(context, true)
+            VoiceWakeService.start(context)
+        } else {
+            enabled = false
+            VoiceWakeStore.setEnabled(context, false)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -87,9 +103,19 @@ fun VoiceWakeSettingPage() {
                     Switch(
                         checked = enabled,
                         onCheckedChange = { on ->
-                            enabled = on
-                            VoiceWakeStore.setEnabled(context, on)
-                            if (on) VoiceWakeService.start(context) else VoiceWakeService.stop(context)
+                            if (on) {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    enabled = true
+                                    VoiceWakeStore.setEnabled(context, true)
+                                    VoiceWakeService.start(context)
+                                } else {
+                                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            } else {
+                                enabled = false
+                                VoiceWakeStore.setEnabled(context, false)
+                                VoiceWakeService.stop(context)
+                            }
                         }
                     )
                 }

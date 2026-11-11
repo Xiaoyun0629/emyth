@@ -6,11 +6,13 @@
 
 package dev.emyth.app.data.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
@@ -20,6 +22,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import dev.emyth.app.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
 import dev.emyth.app.R
 import dev.emyth.app.data.wake.VoiceWakeStore
@@ -40,6 +43,10 @@ class VoiceWakeService : Service() {
         private const val COOLDOWN_MS = 5000L
 
         fun start(context: Context) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "没有麦克风权限，拒绝启动")
+                return
+            }
             val intent = Intent(context, VoiceWakeService::class.java)
             try {
                 context.startForegroundService(intent)
@@ -63,7 +70,13 @@ class VoiceWakeService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForegroundCompat()
+        try {
+            startForegroundCompat()
+        } catch (e: Exception) {
+            Log.e(TAG, "startForeground failed", e)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         VoiceWakeStore.addLog(this, "监听服务启动")
         startRecording()
         return START_STICKY
