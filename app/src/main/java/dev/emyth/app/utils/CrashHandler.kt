@@ -9,12 +9,16 @@ package dev.emyth.app.utils
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val TAG = "CrashHandler"
 private const val PREFS_NAME = "crash_handler"
 private const val KEY_CRASHED = "crashed"
 private const val KEY_STACKTRACE = "stacktrace"
-private const val MAX_STACKTRACE_LENGTH = 8000
+private const val MAX_STACKTRACE_LENGTH = 30000
 
 object CrashHandler {
     fun install(context: Context) {
@@ -52,5 +56,12 @@ object CrashHandler {
                 putBoolean(KEY_CRASHED, true)
                 putString(KEY_STACKTRACE, stackTrace)
             } // commit() 同步写入，确保崩溃前写完
+
+        // 额外写一份到文件，保留历史崩溃记录（SharedPreferences 只留最近一次，文件能存多份，方便反复闪退时对照）
+        runCatching {
+            val dir = File(context.filesDir, "crash_logs").apply { mkdirs() }
+            val name = "crash_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".txt"
+            File(dir, name).writeText(stackTrace)
+        }
     }
 }

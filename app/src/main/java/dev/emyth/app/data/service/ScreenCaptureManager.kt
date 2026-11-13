@@ -150,10 +150,12 @@ object ScreenCaptureManager {
                 val rowStride = plane.rowStride
                 val rowPadding = rowStride - pixelStride * screenWidth
 
-                val bmp = Bitmap.createBitmap(screenWidth + rowPadding / pixelStride, screenHeight, Bitmap.Config.ARGB_8888)
-                bmp.copyPixelsFromBuffer(buffer)
-                // 裁掉 rowPadding 造成的右侧空白
-                Bitmap.createBitmap(bmp, 0, 0, screenWidth, screenHeight)
+                val src = Bitmap.createBitmap(screenWidth + rowPadding / pixelStride, screenHeight, Bitmap.Config.ARGB_8888)
+                src.copyPixelsFromBuffer(buffer)
+                // 裁掉 rowPadding 造成的右侧空白；裁完立即释放源 bitmap，避免泄漏
+                val result = Bitmap.createBitmap(src, 0, 0, screenWidth, screenHeight)
+                src.recycle()
+                result
             } finally {
                 image.close()
             }
