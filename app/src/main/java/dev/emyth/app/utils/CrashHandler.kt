@@ -9,6 +9,10 @@ package dev.emyth.app.utils
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,6 +66,25 @@ object CrashHandler {
             val dir = File(context.filesDir, "crash_logs").apply { mkdirs() }
             val name = "crash_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".txt"
             File(dir, name).writeText(stackTrace)
+        }
+
+        // 再写一份到「下载」公共目录：用户就算打不开 app、进不了安全模式，也能用系统文件管理器直接拿到崩溃日志
+        runCatching {
+            val name = "Emyth_crash_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".txt"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, name)
+                    put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+                context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.let { uri ->
+                    context.contentResolver.openOutputStream(uri)?.use { os -> os.write(stackTrace.toByteArray()) }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                File(dir, name).writeText(stackTrace)
+            }
         }
     }
 }
