@@ -322,7 +322,7 @@ private fun ChatListNormal(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(state = hazeState)
+                .then(if (settings.displaySetting.enableBlurEffect) Modifier.hazeSource(state = hazeState) else Modifier)
                 .padding(top = innerPadding.calculateTopPadding()),
         ) {
             itemsIndexed(
@@ -633,7 +633,7 @@ private fun ChatListPreview(
         modifier = Modifier
             .padding(top = innerPadding.calculateTopPadding())
             .fillMaxSize()
-            .hazeSource(state = hazeState),
+            .then(if (settings.displaySetting.enableBlurEffect) Modifier.hazeSource(state = hazeState) else Modifier),
     ) {
         // 搜索框
         OutlinedTextField(
