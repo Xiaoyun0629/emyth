@@ -47,8 +47,8 @@ class ScreenCaptureAuthActivity : ComponentActivity() {
                 // 交给前台服务建立 MediaProjection（Android 10+ 强制要求前台服务承载）
                 ScreenCaptureService.start(this, resultCode, data)
             } else {
-                // 用户拒绝授权：清除等待标记，避免后续 read_screen 一直以为「在等授权」
-                ScreenCaptureManager.stop()
+                // 用户拒绝授权：清理资源并通知等待中的工具
+                ScreenCaptureManager.markAuthDenied()
             }
         }
         finish()

@@ -64,16 +64,16 @@ class ScreenCaptureService : Service() {
                     ScreenCaptureManager.start(this, mp)
                 } else {
                     Log.e("ScreenCaptureService", "getMediaProjection returned null")
-                    ScreenCaptureManager.stop()
+                    ScreenCaptureManager.markAuthDenied()
                     stopSelf()
                 }
             } catch (e: Exception) {
                 Log.e("ScreenCaptureService", "getMediaProjection failed", e)
-                ScreenCaptureManager.stop()
+                ScreenCaptureManager.markAuthDenied()
                 stopSelf()
             }
         } else {
-            ScreenCaptureManager.stop()
+            ScreenCaptureManager.markAuthDenied()
             stopSelf()
         }
         return START_NOT_STICKY

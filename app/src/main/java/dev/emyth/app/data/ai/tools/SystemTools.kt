@@ -476,13 +476,12 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
             execute = { _ ->
                 if (!ScreenCaptureManager.isReady()) {
-                    if (ScreenCaptureManager.isAwaitingAuth()) {
-                        listOf(UIMessagePart.Text("""{"success":false,"error":"正在等待录屏授权，请在系统弹窗里点「允许」，点完后再调用一次 read_screen。"}"""))
-                    } else {
+                    if (!ScreenCaptureManager.isAwaitingAuth()) {
                         ScreenCaptureAuthActivity.start(context)
-                        listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen。"}"""))
                     }
-                } else {
+                    ScreenCaptureManager.waitForAuth(30000)
+                }
+                if (ScreenCaptureManager.isReady()) {
                     try {
                         val bmp = ScreenCaptureManager.captureScreen()
                         if (bmp == null) {
@@ -498,6 +497,8 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                     } catch (e: Exception) {
                         listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
                     }
+                } else {
+                    listOf(UIMessagePart.Text("""{"success":false,"error":"录屏授权未完成（可能被拒绝或超时），请重试。"}"""))
                 }
             }
         )
@@ -511,13 +512,12 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
             execute = { _ ->
                 if (!ScreenCaptureManager.isReady()) {
-                    if (ScreenCaptureManager.isAwaitingAuth()) {
-                        listOf(UIMessagePart.Text("""{"success":false,"error":"正在等待录屏授权，请在系统弹窗里点「允许」，点完后再调用一次 read_screen_boxes。"}"""))
-                    } else {
+                    if (!ScreenCaptureManager.isAwaitingAuth()) {
                         ScreenCaptureAuthActivity.start(context)
-                        listOf(UIMessagePart.Text("""{"success":false,"error":"已弹出录屏授权框，请在系统弹窗里点「允许」，然后再次调用 read_screen_boxes。"}"""))
                     }
-                } else {
+                    ScreenCaptureManager.waitForAuth(30000)
+                }
+                if (ScreenCaptureManager.isReady()) {
                     try {
                         val json = ScreenCaptureManager.recognizeTextWithBoxes()
                         if (json == null) {
@@ -528,6 +528,8 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                     } catch (e: Exception) {
                         listOf(UIMessagePart.Text("""{"success":false,"error":"${e.message}"}"""))
                     }
+                } else {
+                    listOf(UIMessagePart.Text("""{"success":false,"error":"录屏授权未完成（可能被拒绝或超时），请重试。"}"""))
                 }
             }
         )

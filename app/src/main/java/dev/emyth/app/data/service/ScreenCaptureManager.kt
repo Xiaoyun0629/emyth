@@ -24,6 +24,8 @@ import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * 屏幕捕获管理器：用 MediaProjection 录屏授权，按需抓帧，配合视觉模型「看见」做了无障碍屏蔽、读屏读不到的界面。
@@ -45,6 +47,10 @@ object ScreenCaptureManager {
     /** 是否已弹出授权框、正在等用户点「允许」。避免 read_screen 反复弹框造成死循环。 */
     @Volatile
     private var awaitingAuth = false
+
+    /** 授权结果等待锁：read_screen 工具弹框后阻塞等待授权完成，避免「返回后 AI 反复重试、反复弹框作废 token」。 */
+    @Volatile
+    private var authLatch: CountDownLatch? = null
 
     /**
      * 代际计数：每次 start/stop/清理都自增。
@@ -101,6 +107,7 @@ object ScreenCaptureManager {
             imageReader = reader
             virtualDisplay = vd
             awaitingAuth = false
+            notifyAuthResult()
             android.util.Log.i(TAG, "Screen capture started: ${screenWidth}x${screenHeight}@${screenDensityDpi}")
 
             // 用户从状态栏手动停止录屏 / 投影被系统回收时，清理资源。代际判断防止旧回调误清理新资源。
@@ -203,6 +210,35 @@ object ScreenCaptureManager {
     private fun escapeJson(s: String): String =
         s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
 
+
+    /**
+     * 阻塞等待授权结果（最多 timeoutMs 毫秒）。read_screen 工具弹框后调用，等待「授权成功建立 MediaProjection」
+     * 或「授权被拒 / 建立失败」的通知，避免工具返回后 AI 反复重试、反复 createScreenCaptureIntent 作废 token。
+     */
+    fun waitForAuth(timeoutMs: Long): Boolean {
+        val latch = CountDownLatch(1)
+        authLatch = latch
+        return try {
+            latch.await(timeoutMs, TimeUnit.MILLISECONDS)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
+        } finally {
+            if (authLatch === latch) authLatch = null
+        }
+    }
+
+    /** 授权流程走到终点（成功或失败）时通知等待者。 */
+    fun notifyAuthResult() {
+        authLatch?.countDown()
+        authLatch = null
+    }
+
+    /** 授权被拒或建立失败：清理资源并通知等待者（区别于 stopInternal 的纯内部清理）。 */
+    fun markAuthDenied() {
+        stopInternal()
+        notifyAuthResult()
+    }
 
     private fun stopInternal() {
         generation++
