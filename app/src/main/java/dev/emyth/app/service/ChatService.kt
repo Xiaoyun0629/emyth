@@ -1505,7 +1505,7 @@ addAll(localTools.getTools(assistant.localTools, dev.emyth.app.data.ai.tools.Too
         val parts = lastMessage.parts
 
         // 确定当前状态
-        val (chipText, statusText, contentText) = determineNotificationContent(parts)
+        val (_, statusText, contentText) = determineNotificationContent(parts)
 
         context.sendNotification(
             channelId = CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID,
@@ -1519,8 +1519,6 @@ addAll(localTools.getTools(assistant.localTools, dev.emyth.app.data.ai.tools.Too
             category = NotificationCompat.CATEGORY_PROGRESS
             useBigTextStyle = true
             contentIntent = getPendingIntent(context, conversationId)
-            requestPromotedOngoing = true
-            shortCriticalText = chipText
         }
     }
 
