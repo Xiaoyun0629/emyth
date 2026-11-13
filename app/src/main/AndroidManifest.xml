@@ -381,8 +381,12 @@
       android:name=".service.KeepAliveService"
       android:enabled="true"
       android:exported="false"
-      android:foregroundServiceType="dataSync"
-      android:stopWithTask="false" />
+      android:foregroundServiceType="specialUse"
+      android:stopWithTask="false">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="keep app alive for scheduled reminders and proactive messages" />
+    </service>
 
     <!-- 微信 Bot (iLink 协议): 长轮询收微信消息, 转给关联助手处理, 回复发回微信 -->
     <service
