@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import dev.emyth.app.data.files.FileFolders
 import dev.emyth.app.data.files.SkillPaths
 import dev.emyth.app.data.datastore.Settings
+import dev.emyth.app.data.db.AppDatabase
 import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.datastore.WebDavConfig
 import dev.emyth.app.data.datastore.migration.SettingsJsonMigrator
@@ -22,6 +23,7 @@ import dev.emyth.app.plugin.repository.PluginRepository
 import dev.emyth.app.plugin.repository.PluginSettingsExport
 import dev.emyth.app.plugin.scanner.PluginScanner
 import dev.emyth.app.utils.fileSizeToString
+import org.koin.core.context.GlobalContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -43,6 +45,16 @@ class WebDavSync(
 ) {
     private fun getClient(config: WebDavConfig): WebDavClient {
         return WebDavClient(config, httpClient)
+    }
+
+    /** 恢复数据库前先关闭当前数据库连接，避免直接覆盖 db 文件导致状态不一致（聊天框异常/闪退）。 */
+    private fun closeDatabase() {
+        runCatching {
+            GlobalContext.get().get<AppDatabase>().close()
+            Log.i(TAG, "closeDatabase: Database closed")
+        }.onFailure {
+            Log.w(TAG, "closeDatabase: failed to close database", it)
+        }
     }
 
     suspend fun testConnection(config: WebDavConfig) = withContext(Dispatchers.IO) {
@@ -248,6 +260,9 @@ class WebDavSync(
         includePlugins: Boolean = true
     ) = withContext(Dispatchers.IO) {
         Log.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
+
+        // 关键：恢复数据库前先关闭当前连接，否则直接覆盖 rikka_hub.db 会跟内存状态冲突
+        closeDatabase()
 
         ZipInputStream(FileInputStream(backupFile)).use { zipIn ->
             var entry: ZipEntry?
