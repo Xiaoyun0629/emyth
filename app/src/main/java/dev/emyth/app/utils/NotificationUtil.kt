@@ -77,7 +77,12 @@ object NotificationUtil {
         val notificationConfig = NotificationConfig().apply(config)
         val notification = buildNotification(context, channelId, notificationConfig)
 
-        NotificationManagerCompat.from(context).notify(notificationId, notification.build())
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification.build())
+        } catch (e: Throwable) {
+            // 某些 ROM 对 Live Update 通知支持不完整，notify 抛异常时降级，不致命
+            return false
+        }
         return true
     }
 
@@ -110,14 +115,22 @@ object NotificationUtil {
                 setDefaults(NotificationCompat.DEFAULT_ALL)
             }
 
-            // Android 15+ Live Update 支持
-            if (config.requestPromotedOngoing && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                setRequestPromotedOngoing(true)
+            // Android 15+ Live Update 支持（部分 ROM 支持不完整，抛异常时降级为普通通知）
+            try {
+                if (config.requestPromotedOngoing && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    setRequestPromotedOngoing(true)
+                }
+            } catch (e: Throwable) {
+                // 忽略，降级为普通通知
             }
 
-            // Android 16+ 状态栏 chip 文本
-            if (config.shortCriticalText != null && Build.VERSION.SDK_INT >= 36) {
-                setShortCriticalText(config.shortCriticalText!!)
+            // Android 16+ 状态栏 chip 文本（同上，失败降级）
+            try {
+                if (config.shortCriticalText != null && Build.VERSION.SDK_INT >= 36) {
+                    setShortCriticalText(config.shortCriticalText!!)
+                }
+            } catch (e: Throwable) {
+                // 忽略
             }
         }
     }
