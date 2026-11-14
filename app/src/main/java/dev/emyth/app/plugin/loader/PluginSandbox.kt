@@ -8,6 +8,7 @@ package dev.emyth.app.plugin.loader
  
 import android.content.Context
 import android.util.Log
+import com.whl.quickjs.android.QuickJSLoader
 import com.whl.quickjs.wrapper.JSCallFunction
 import com.whl.quickjs.wrapper.QuickJSContext
 import com.whl.quickjs.wrapper.QuickJSObject
@@ -69,6 +70,15 @@ class PluginSandbox(
         if (quickJSContext != null) return
  
         Log.d(TAG, "Initializing QuickJS sandbox")
+        // QuickJS 的 native 库（libsimple.so）延迟到这里才加载：不再在 App 启动时加载，
+        // 部分新 Android（14/15/16）上 native 加载/初始化失败会直接崩溃且无日志。
+        // try-catch 兜底：加载失败时插件功能降级，但绝不让 App 崩。
+        try {
+            QuickJSLoader.init()
+        } catch (e: Throwable) {
+            Log.e(TAG, "QuickJS native library load failed, plugin disabled", e)
+            return
+        }
         quickJSContext = QuickJSContext.create().apply {
  
             // 设置控制台

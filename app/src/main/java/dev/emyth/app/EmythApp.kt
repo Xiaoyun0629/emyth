@@ -27,7 +27,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import me.rerere.common.android.appTempFolder
-import com.whl.quickjs.android.QuickJSLoader
 import dev.emyth.app.di.appModule
 import dev.emyth.app.di.dataSourceModule
 import dev.emyth.app.di.repositoryModule
@@ -137,9 +136,6 @@ class EmythApp : Application() {
 
         // set cursor window size to 32MB
         DatabaseUtil.setCursorWindowSize(32 * 1024 * 1024)
-
-        // Init QuickJS native library
-        QuickJSLoader.init()
 
         // delete temp files
         deleteTempFiles()
