@@ -79,6 +79,11 @@ class EmythApp : Application() {
     override fun onCreate() {
         super.onCreate()
         INSTANCE = this
+
+        // 崩溃处理器提前到最开头：让后续任何初始化崩溃（如 Coil）都能写日志，
+        // 而不是崩在 CrashHandler 装好之前、什么日志都留不下。
+        CrashHandler.install(this)
+
         startKoin {
             androidLogger()
             androidContext(this@EmythApp)
@@ -90,23 +95,29 @@ class EmythApp : Application() {
         // 设置 Coil 3 单例 ImageLoader：必须只设置一次、且在任何 Coil 使用之前。
         // 放在 Application 里（而不是 RouteActivity），避免 activity 重建时重复调用导致
         // "singleton image loader has already been created" 崩溃。
-        val coilOkHttpClient = get<OkHttpClient>()
-        SingletonImageLoader.setSafe { context ->
-            ImageLoader.Builder(context)
-                .crossfade(true)
-                .components {
-                    add(OkHttpNetworkFetcherFactory(
-                        callFactory = { coilOkHttpClient },
-                        cacheStrategy = { CacheControlCacheStrategy() },
-                    ))
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        add(AnimatedImageDecoder.Factory())
-                    } else {
-                        add(GifDecoder.Factory())
+        // 用 runCatching 包一层：Coil 初始化失败（某些机型/系统版本）不该让 App 启动崩溃，
+        // 降级到 Coil 默认 ImageLoader 即可。
+        runCatching {
+            val coilOkHttpClient = get<OkHttpClient>()
+            SingletonImageLoader.setSafe { context ->
+                ImageLoader.Builder(context)
+                    .crossfade(true)
+                    .components {
+                        add(OkHttpNetworkFetcherFactory(
+                            callFactory = { coilOkHttpClient },
+                            cacheStrategy = { CacheControlCacheStrategy() },
+                        ))
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            add(AnimatedImageDecoder.Factory())
+                        } else {
+                            add(GifDecoder.Factory())
+                        }
+                        add(SvgDecoder.Factory(scaleToDensity = true))
                     }
-                    add(SvgDecoder.Factory(scaleToDensity = true))
-                }
-                .build()
+                    .build()
+            }
+        }.onFailure { e ->
+            android.util.Log.e(TAG, "Failed to init Coil singleton ImageLoader", e)
         }
 
         // 预热 ChatService 单例: 强制在主线程(Application.onCreate 由 Android 保证
@@ -126,9 +137,6 @@ class EmythApp : Application() {
 
         // set cursor window size to 32MB
         DatabaseUtil.setCursorWindowSize(32 * 1024 * 1024)
-
-        // install crash handler
-        CrashHandler.install(this)
 
         // Init QuickJS native library
         QuickJSLoader.init()
