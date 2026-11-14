@@ -49,6 +49,15 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.network.cachecontrol.CacheControlCacheStrategy
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
+import okhttp3.OkHttpClient
 
 private const val TAG = "EmythApp"
 
@@ -77,6 +86,28 @@ class EmythApp : Application() {
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule, pluginModule)
         }
         this.createNotificationChannel()
+
+        // 设置 Coil 3 单例 ImageLoader：必须只设置一次、且在任何 Coil 使用之前。
+        // 放在 Application 里（而不是 RouteActivity），避免 activity 重建时重复调用导致
+        // "singleton image loader has already been created" 崩溃。
+        val coilOkHttpClient = get<OkHttpClient>()
+        setSingletonImageLoaderFactory { context ->
+            ImageLoader.Builder(context)
+                .crossfade(true)
+                .components {
+                    add(OkHttpNetworkFetcherFactory(
+                        callFactory = { coilOkHttpClient },
+                        cacheStrategy = { CacheControlCacheStrategy() },
+                    ))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        add(AnimatedImageDecoder.Factory())
+                    } else {
+                        add(GifDecoder.Factory())
+                    }
+                    add(SvgDecoder.Factory(scaleToDensity = true))
+                }
+                .build()
+        }
 
         // 预热 ChatService 单例: 强制在主线程(Application.onCreate 由 Android 保证
         // 在主线程执行, 且先于同一进程内任何 Service/BroadcastReceiver/Activity 回调)
