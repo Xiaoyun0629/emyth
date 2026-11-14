@@ -50,7 +50,7 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
 import coil3.ImageLoader
-import coil3.compose.setSingletonImageLoaderFactory
+import coil3.SingletonImageLoader
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import coil3.network.cachecontrol.CacheControlCacheStrategy
@@ -91,7 +91,7 @@ class EmythApp : Application() {
         // 放在 Application 里（而不是 RouteActivity），避免 activity 重建时重复调用导致
         // "singleton image loader has already been created" 崩溃。
         val coilOkHttpClient = get<OkHttpClient>()
-        setSingletonImageLoaderFactory { context ->
+        SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
                 .crossfade(true)
                 .components {
