@@ -37,6 +37,7 @@ class Highlighter(ctx: Context) {
     init {
         executor.submit {
             context // init context
+            highlightFn // 预热：确保 getJSFunction 也在 executor 单线程执行，避免跨线程崩溃
         }
     }
 
@@ -61,13 +62,15 @@ class Highlighter(ctx: Context) {
 
     suspend fun highlight(code: String, language: String) =
         suspendCancellableCoroutine { continuation ->
-            val fn = highlightFn
-            if (fn == null) {
-                continuation.resume(listOf(HighlightToken.Plain(content = code)))
-                return@suspendCancellableCoroutine
-            }
             executor.submit {
                 runCatching {
+                    val fn = highlightFn
+                    if (fn == null) {
+                        if (continuation.isActive) {
+                            continuation.resume(listOf(HighlightToken.Plain(content = code)))
+                        }
+                        return@runCatching
+                    }
                     val result = fn.call(code, language)
                     require(result is QuickJSArray) {
                         "highlight result must be an array"
