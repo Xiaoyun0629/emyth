@@ -155,6 +155,18 @@ object ModelRegistry {
         reasoningAbility()
     }
 
+    val GEMINI_4 = defineModel {
+        tokens("gemini", "4")
+        visionInput()
+        toolReasoningAbility()
+    }
+
+    val GEMINI_4_HYDROGEN = defineModel {
+        tokens("gemini", "4", "hydrogen")
+        visionInput()
+        toolReasoningAbility()
+    }
+
     val GEMINI_FLASH_LATEST = defineModel {
         exact("gemini-flash-latest")
         visionInput()
@@ -176,7 +188,7 @@ object ModelRegistry {
     }
 
     val GEMINI_SERIES = defineGroup {
-        add(GEMINI_20_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_SERIES, GEMINI_LATEST)
+        add(GEMINI_20_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_SERIES, GEMINI_LATEST, GEMINI_4, GEMINI_4_HYDROGEN)
     }
 
     private val CLAUDE_SONNET_3_5 = defineModel {
@@ -428,6 +440,8 @@ object ModelRegistry {
         GEMINI_3_1_FLASH_IMAGE,
         GEMINI_FLASH_LATEST,
         GEMINI_PRO_LATEST,
+        GEMINI_4,
+        GEMINI_4_HYDROGEN,
         CLAUDE_SONNET_3_5,
         CLAUDE_SONNET_3_7,
         CLAUDE_4,
