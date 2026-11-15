@@ -25,8 +25,12 @@ import com.kyant.backdrop.shadow.Shadow
 val LocalLiquidGlassBackdrop = compositionLocalOf<Backdrop?> { null }
 
 private const val LiquidGlassMinApi = Build.VERSION_CODES.TIRAMISU
+// kyant backdrop（GPU 着色器做折射/模糊）在 Android 15+ 会 native 崩溃（栈溢出、无日志），
+// 所以 Android 15 及以上禁用，降级为普通半透明 fallback，避免"发消息闪退"。
+private const val LiquidGlassMaxApi = Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
-fun isLiquidGlassSupported(): Boolean = Build.VERSION.SDK_INT >= LiquidGlassMinApi
+fun isLiquidGlassSupported(): Boolean =
+    Build.VERSION.SDK_INT >= LiquidGlassMinApi && Build.VERSION.SDK_INT <= LiquidGlassMaxApi
 
 @Composable
 fun Modifier.liquidGlass(
