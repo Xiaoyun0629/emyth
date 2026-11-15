@@ -41,6 +41,7 @@ import dev.emyth.app.data.service.ProactiveMessageService
 import dev.emyth.app.data.service.SupabaseSyncService
 import dev.emyth.app.service.ChatService
 import dev.emyth.app.service.WebServerService
+import com.whl.quickjs.android.QuickJSLoader
 import dev.emyth.app.utils.CrashHandler
 import dev.emyth.app.utils.DatabaseUtil
 import org.koin.android.ext.android.get
@@ -136,6 +137,14 @@ class EmythApp : Application() {
 
         // set cursor window size to 32MB
         DatabaseUtil.setCursorWindowSize(32 * 1024 * 1024)
+
+        // Init QuickJS native library（代码高亮 Highlighter 和插件沙箱都依赖它）
+        // try-catch 兜底：so 加载失败（UnsatisfiedLinkError 等）不让 App 崩
+        try {
+            QuickJSLoader.init()
+        } catch (e: Throwable) {
+            android.util.Log.e(TAG, "QuickJSLoader.init failed", e)
+        }
 
         // delete temp files
         deleteTempFiles()
