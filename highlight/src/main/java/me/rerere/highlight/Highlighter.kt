@@ -7,6 +7,7 @@
 package me.rerere.highlight
 
 import android.content.Context
+import com.whl.quickjs.android.QuickJSLoader
 import com.whl.quickjs.wrapper.QuickJSArray
 import com.whl.quickjs.wrapper.QuickJSContext
 import com.whl.quickjs.wrapper.QuickJSObject
@@ -45,21 +46,29 @@ class Highlighter(ctx: Context) {
         }
     }
 
-    private val context: QuickJSContext by lazy {
-        QuickJSContext.create().also {
-            it.evaluate(script)
-        }
+    private val context: QuickJSContext? by lazy {
+        runCatching {
+            QuickJSLoader.init()
+            QuickJSContext.create().also {
+                it.evaluate(script)
+            }
+        }.onFailure { it.printStackTrace() }.getOrNull()
     }
 
     private val highlightFn by lazy {
-        context.globalObject.getJSFunction("highlight")
+        context?.globalObject?.getJSFunction("highlight")
     }
 
     suspend fun highlight(code: String, language: String) =
         suspendCancellableCoroutine { continuation ->
+            val fn = highlightFn
+            if (fn == null) {
+                continuation.resume(listOf(HighlightToken.Plain(content = code)))
+                return@suspendCancellableCoroutine
+            }
             executor.submit {
                 runCatching {
-                    val result = highlightFn.call(code, language)
+                    val result = fn.call(code, language)
                     require(result is QuickJSArray) {
                         "highlight result must be an array"
                     }
@@ -95,7 +104,7 @@ class Highlighter(ctx: Context) {
         }
 
     fun destroy() {
-        context.destroy()
+        context?.destroy()
     }
 }
 
