@@ -6,21 +6,28 @@
 
 package dev.emyth.app.ui.pages.backup
 
+import android.app.Application
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import dev.emyth.app.R
 import dev.emyth.app.data.datastore.Settings
 import dev.emyth.app.data.datastore.SettingsStore
 import dev.emyth.app.data.repository.ConversationRepository
 import dev.emyth.app.data.repository.MemoryRepository
+import dev.emyth.app.data.files.FileFolders
+import dev.emyth.app.data.files.FilesManager
 import dev.emyth.app.data.sync.importer.ChatboxImporter
 import dev.emyth.app.data.sync.importer.CherryStudioProviderImporter
-import dev.emyth.app.data.sync.importer.KelivoImporter
-import dev.emyth.app.data.sync.importer.RikkahubImporter
+import dev.emyth.app.data.sync.importer.DeepSeekImportResult
+import dev.emyth.app.data.sync.importer.DeepSeekImporter
 import dev.emyth.app.data.sync.webdav.WebDavBackupItem
 import dev.emyth.app.data.sync.webdav.WebDavSync
 import dev.emyth.app.data.sync.S3BackupItem
@@ -31,11 +38,13 @@ import java.io.File
 private const val TAG = "BackupVM"
 
 class BackupVM(
+    private val context: Application,
     private val settingsStore: SettingsStore,
     private val webDavSync: WebDavSync,
     private val s3Sync: S3Sync,
     private val conversationRepository: ConversationRepository,
     private val memoryRepository: MemoryRepository,
+    private val filesManager: FilesManager,
 ) : ViewModel() {
     val settings = settingsStore.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -167,118 +176,28 @@ class BackupVM(
         )
     }
 
-    suspend fun restoreFromRikkahub(file: File): ImportRestoreResult {
-        val payload = RikkahubImporter.import(
+    suspend fun restoreFromDeepSeek(file: File): DeepSeekImportResult = withContext(Dispatchers.IO) {
+        DeepSeekImporter.importStreaming(
             file = file,
             assistantId = settings.value.assistantId,
-        )
-        val targetAssistantId = settings.value.assistantId
-
-        if (payload.providers.isNotEmpty()) {
-            settingsStore.update(
-                settings.value.copy(providers = payload.providers + settings.value.providers),
-            )
-        }
-
-        if (payload.assistants.isNotEmpty()) {
-            val importedAssistant = payload.assistants.first()
-            settingsStore.update(
-                settings.value.copy(
-                    assistants = settings.value.assistants.map { assistant ->
-                        if (assistant.id == targetAssistantId) {
-                            assistant.copy(
-                                avatar = importedAssistant.avatar,
-                                background = importedAssistant.background,
-                            )
-                        } else {
-                            assistant
-                        }
-                    },
-                ),
-            )
-        }
-
-        val assistantIdStr = targetAssistantId.toString()
-        payload.memories.forEach { content ->
-            runCatching { memoryRepository.addMemory(assistantIdStr, content) }
-        }
-
-        var importedConversations = 0
-        var skippedExistingConversations = 0
-        payload.conversations.forEach { conversation ->
-            if (conversationRepository.existsConversationById(conversation.id)) {
-                skippedExistingConversations++
-            } else {
+            shouldImportConversation = { !conversationRepository.existsConversationById(it) },
+            formatMissingAttachment = { name ->
+                context.getString(R.string.backup_page_import_deepseek_missing_attachment, name)
+            },
+            saveAttachment = { resource ->
+                val entity = filesManager.saveManagedFromBytes(
+                    folder = FileFolders.UPLOAD,
+                    bytes = resource.bytes,
+                    displayName = resource.fileName,
+                    mimeType = resource.mimeType,
+                )
+                filesManager.getFile(entity).toUri().toString()
+            },
+            onConversation = { conversation ->
                 conversationRepository.insertConversation(conversation)
-                importedConversations++
-            }
-        }
-        Log.i(
-            TAG,
-            "restoreFromRikkahub: ${payload.providers.size} providers, ${payload.assistants.size} assistants, ${payload.memories.size} memories, $importedConversations conversations, skip $skippedExistingConversations existing",
-        )
-        return ImportRestoreResult(
-            importedConversations = importedConversations,
-            skippedExistingConversations = skippedExistingConversations,
+            },
         )
     }
-
-    suspend fun restoreFromKelivo(file: File): ImportRestoreResult {
-        val payload = KelivoImporter.import(
-            file = file,
-            assistantId = settings.value.assistantId,
-        )
-        val targetAssistantId = settings.value.assistantId
-
-        if (payload.providers.isNotEmpty()) {
-            settingsStore.update(
-                settings.value.copy(providers = payload.providers + settings.value.providers),
-            )
-        }
-
-        if (payload.assistants.isNotEmpty()) {
-            val importedAssistant = payload.assistants.first()
-            settingsStore.update(
-                settings.value.copy(
-                    assistants = settings.value.assistants.map { assistant ->
-                        if (assistant.id == targetAssistantId) {
-                            assistant.copy(
-                                avatar = importedAssistant.avatar,
-                                background = importedAssistant.background,
-                            )
-                        } else {
-                            assistant
-                        }
-                    },
-                ),
-            )
-        }
-
-        val assistantIdStr = targetAssistantId.toString()
-        payload.memories.forEach { content ->
-            runCatching { memoryRepository.addMemory(assistantIdStr, content) }
-        }
-
-        var importedConversations = 0
-        var skippedExistingConversations = 0
-        payload.conversations.forEach { conversation ->
-            if (conversationRepository.existsConversationById(conversation.id)) {
-                skippedExistingConversations++
-            } else {
-                conversationRepository.insertConversation(conversation)
-                importedConversations++
-            }
-        }
-        Log.i(
-            TAG,
-            "restoreFromKelivo: ${payload.providers.size} providers, ${payload.assistants.size} assistants, ${payload.memories.size} memories, $importedConversations conversations, skip $skippedExistingConversations existing",
-        )
-        return ImportRestoreResult(
-            importedConversations = importedConversations,
-            skippedExistingConversations = skippedExistingConversations,
-        )
-    }
-
     // S3 Backup methods
     fun loadS3BackupFileItems() {
         viewModelScope.launch {
@@ -333,8 +252,3 @@ data class ChatboxRestoreResult(
     val skippedEmptyMessages: Int,
 )
 
-
-data class ImportRestoreResult(
-    val importedConversations: Int,
-    val skippedExistingConversations: Int,
-)

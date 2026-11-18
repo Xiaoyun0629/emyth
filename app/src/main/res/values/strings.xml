@@ -190,10 +190,11 @@
   <string name="backup_page_import_export">Local</string>
   <string name="backup_page_import_from_chatbox">Import from ChatBox</string>
   <string name="backup_page_import_from_cherry_studio">Import from Cherry Studio</string>
-  <string name="backup_page_import_from_rikkahub">Import from RikkaHub</string>
-  <string name="backup_page_import_rikkahub_desc">Import chat history from a RikkaHub backup</string>
-  <string name="backup_page_import_from_kelivo">Import from Kelivo</string>
-  <string name="backup_page_import_kelivo_desc">Import chat history from a Kelivo backup</string>
+  <string name="backup_page_import_from_deepseek">Import from DeepSeek</string>
+  <string name="backup_page_import_deepseek_desc">Import the current branch of each chat, including reasoning and attachments, from a DeepSeek export ZIP into the current assistant. Existing conversations are skipped.</string>
+  <string name="backup_page_import_deepseek_complete">DeepSeek import complete</string>
+  <string name="backup_page_import_deepseek_summary">Conversations imported: %1$d\nExisting conversations skipped: %2$d\nEmpty conversations skipped: %3$d\nAttachments missing or unable to be imported: %4$d</string>
+  <string name="backup_page_import_deepseek_missing_attachment">[Attachment missing from the export or unable to be imported: %1$s]</string>
   <string name="backup_page_import_from_other_app">Import from other app</string>
   <string name="backup_page_importing">Importing...</string>
   <string name="backup_page_loading_failed">Failed to load backup files: %s</string>

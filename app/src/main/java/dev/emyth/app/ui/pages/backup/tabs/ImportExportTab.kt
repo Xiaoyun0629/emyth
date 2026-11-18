@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +32,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToastType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import dev.emyth.app.R
 import dev.emyth.app.ui.components.ui.CardGroup
 import dev.emyth.app.ui.components.ui.StickyHeader
 import dev.emyth.app.ui.context.LocalToaster
+import dev.emyth.app.data.sync.importer.DeepSeekImportResult
 import dev.emyth.app.ui.pages.backup.BackupVM
 import java.io.File
 import java.io.FileInputStream
@@ -53,8 +58,9 @@ fun ImportExportTab(
     var isExporting by remember { mutableStateOf(false) }
     var isRestoring by remember { mutableStateOf(false) }
 
-    // 导入类型：local 为本地备份，chatbox 为 Chatbox 导入，cherry 为 Cherry Studio 导入
+    // 导入类型：local、chatbox、cherry、deepseek
     var importType by remember { mutableStateOf("local") }
+    var deepSeekImportResult by remember { mutableStateOf<DeepSeekImportResult?>(null) }
 
     // 创建文件保存的launcher
     val createDocumentLauncher = rememberLauncherForActivityResult(
@@ -156,10 +162,10 @@ fun ImportExportTab(
                             tempFile.delete()
                         }
 
-                        "rikkahub" -> {
-                            // RikkaHub导入：处理zip文件
+                        "deepseek" -> {
+                            // DeepSeek导入：处理zip文件
                             val tempFile =
-                                File(context.cacheDir, "temp_rikkahub_${System.currentTimeMillis()}.zip")
+                                File(context.cacheDir, "temp_deepseek_${System.currentTimeMillis()}.zip")
 
                             context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
                                 FileOutputStream(tempFile).use { outputStream ->
@@ -167,37 +173,23 @@ fun ImportExportTab(
                                 }
                             }
 
-                            // 从RikkaHub备份恢复
-                            vm.restoreFromRikkahub(tempFile)
-
-                            // 清理临时文件
-                            tempFile.delete()
-                        }
-
-                        "kelivo" -> {
-                            // Kelivo导入：处理zip文件
-                            val tempFile =
-                                File(context.cacheDir, "temp_kelivo_${System.currentTimeMillis()}.zip")
-
-                            context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
-                                FileOutputStream(tempFile).use { outputStream ->
-                                    inputStream.copyTo(outputStream)
-                                }
+                            // 从DeepSeek导出文件恢复
+                            deepSeekImportResult = withContext(Dispatchers.IO) {
+                                vm.restoreFromDeepSeek(tempFile)
                             }
-
-                            // 从Kelivo备份恢复
-                            vm.restoreFromKelivo(tempFile)
 
                             // 清理临时文件
                             tempFile.delete()
                         }
                     }
 
-                    toaster.show(
-                        context.getString(R.string.backup_page_restore_success),
-                        type = ToastType.Success
-                    )
-                    onShowRestartDialog()
+                    if (importType != "deepseek") {
+                        toaster.show(
+                            context.getString(R.string.backup_page_restore_success),
+                            type = ToastType.Success
+                        )
+                        onShowRestartDialog()
+                    }
                 }.onFailure { e ->
                     e.printStackTrace()
                     toaster.show(
@@ -326,32 +318,17 @@ fun ImportExportTab(
                 item(
                     onClick = if (!isRestoring) {
                         {
-                            importType = "rikkahub"
-                            openDocumentLauncher.launch(arrayOf("application/zip"))
-                        }
-                    } else null,
-                    headlineContent = { Text(stringResource(R.string.backup_page_import_from_rikkahub)) },
-                    supportingContent = { Text(stringResource(R.string.backup_page_import_rikkahub_desc)) },
-                    leadingContent = {
-                        if (isRestoring && importType == "rikkahub") {
-                            CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Icon(HugeIcons.FileImport, null)
-                        }
-                    },
-                )
-
                 item(
                     onClick = if (!isRestoring) {
                         {
-                            importType = "kelivo"
+                            importType = "deepseek"
                             openDocumentLauncher.launch(arrayOf("application/zip"))
                         }
                     } else null,
-                    headlineContent = { Text(stringResource(R.string.backup_page_import_from_kelivo)) },
-                    supportingContent = { Text(stringResource(R.string.backup_page_import_kelivo_desc)) },
+                    headlineContent = { Text(stringResource(R.string.backup_page_import_from_deepseek)) },
+                    supportingContent = { Text(stringResource(R.string.backup_page_import_deepseek_desc)) },
                     leadingContent = {
-                        if (isRestoring && importType == "kelivo") {
+                        if (isRestoring && importType == "deepseek") {
                             CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
                             Icon(HugeIcons.FileImport, null)
@@ -361,4 +338,27 @@ fun ImportExportTab(
             }
         }
     }
+    deepSeekImportResult?.let { result ->
+        AlertDialog(
+            onDismissRequest = { deepSeekImportResult = null },
+            title = { Text(stringResource(R.string.backup_page_import_deepseek_complete)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.backup_page_import_deepseek_summary,
+                        result.importedConversations,
+                        result.skippedExistingConversations,
+                        result.skippedEmptyConversations,
+                        result.missingAttachments,
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { deepSeekImportResult = null }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+        )
+    }
+
 }
