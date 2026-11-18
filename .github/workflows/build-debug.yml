@@ -49,3 +49,22 @@ jobs:
           name: apk
           path: |
             app/build/outputs/apk/lock/*.apk
+
+      - name: Upload to server
+        env:
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
+        run: |
+          APK=$(ls app/build/outputs/apk/lock/*.apk | head -1)
+          if [ -z "$APK_UPLOAD_TOKEN" ]; then
+            echo "APK_UPLOAD_TOKEN 未配置，跳过上传服务器"
+            exit 0
+          fi
+          echo "上传 $APK 到服务器 120.76.178.0"
+          curl -f -X POST \
+            --connect-timeout 30 \
+            --max-time 600 \
+            --retry 3 \
+            --retry-delay 15 \
+            -H "Authorization: Bearer $APK_UPLOAD_TOKEN" \
+            --data-binary "@$APK" \
+            "http://120.76.178.0:8080/lock.apk" || echo "上传服务器失败（artifact 仍可手动拉取）"
