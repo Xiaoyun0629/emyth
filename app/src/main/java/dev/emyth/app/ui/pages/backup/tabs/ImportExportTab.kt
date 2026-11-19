@@ -318,9 +318,6 @@ fun ImportExportTab(
                 item(
                     onClick = if (!isRestoring) {
                         {
-                item(
-                    onClick = if (!isRestoring) {
-                        {
                             importType = "deepseek"
                             openDocumentLauncher.launch(arrayOf("application/zip"))
                         }
