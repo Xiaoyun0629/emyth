@@ -830,6 +830,13 @@ private fun MessagePartsBlock(
 }
  
 @Composable
+private fun isRenderEffectBlurSafe(): Boolean {
+    // vivo 部分机型 GPU 驱动对 RenderEffect 实时模糊支持不稳，
+    // 点开历史聊天记录时会 native 崩溃（SIGSEGV、无日志），故全系降级为半透明玻璃。
+    val manufacturer = Build.MANUFACTURER?.lowercase().orEmpty()
+    return !manufacturer.contains("vivo") && !manufacturer.contains("bbk")
+}
+
 private fun BubbleSurface(
     cornerRadius: Dp,
     color: Color,
@@ -849,6 +856,7 @@ private fun BubbleSurface(
             liveContext.imageBitmap != null &&
             materialMode == DisplayMaterialMode.GLASS &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            isRenderEffectBlurSafe() &&
             liveContext.radiusPx > 0f
     val cachedBlurEffect = remember(liveEnabled, liveContext.radiusPx) {
         if (liveEnabled) {
