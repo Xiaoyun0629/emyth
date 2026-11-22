@@ -835,7 +835,6 @@ private fun MessagePartsBlock(
     }
 }
  
-@Composable
 private fun isRenderEffectBlurSafe(): Boolean {
     // vivo 部分机型 GPU 驱动对 RenderEffect 实时模糊支持不稳，
     // 点开历史聊天记录时会 native 崩溃（SIGSEGV、无日志），故全系降级为半透明玻璃。
@@ -843,6 +842,7 @@ private fun isRenderEffectBlurSafe(): Boolean {
     return !manufacturer.contains("vivo") && !manufacturer.contains("bbk")
 }
 
+@Composable
 private fun BubbleSurface(
     cornerRadius: Dp,
     color: Color,
