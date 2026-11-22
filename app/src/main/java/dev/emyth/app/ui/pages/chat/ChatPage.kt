@@ -118,6 +118,8 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.Uuid
 
+private const val CHAT_BACKGROUND_MAX_DIM = 1440
+
 private suspend fun decodeChatBackgroundBitmap(
     context: Context,
     model: String,
@@ -125,20 +127,20 @@ private suspend fun decodeChatBackgroundBitmap(
     val uri = runCatching { Uri.parse(model) }.getOrNull()
     val bitmap = when {
         model.startsWith("/") -> {
-            BitmapFactory.decodeFile(model)
+            decodeFileSampled(model)
         }
 
         uri?.scheme == ContentResolver.SCHEME_CONTENT ||
             uri?.scheme == ContentResolver.SCHEME_ANDROID_RESOURCE -> {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                BitmapFactory.decodeStream(input)
+                decodeStreamSampled(input)
             }
         }
 
         uri?.scheme == ContentResolver.SCHEME_FILE -> {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                BitmapFactory.decodeStream(input)
-            } ?: uri.path?.let(BitmapFactory::decodeFile)
+                decodeStreamSampled(input)
+            } ?: uri.path?.let(::decodeFileSampled)
         }
 
         uri?.scheme == "http" || uri?.scheme == "https" -> {
@@ -146,15 +148,59 @@ private suspend fun decodeChatBackgroundBitmap(
         }
 
         else -> {
-            BitmapFactory.decodeFile(model)
+            decodeFileSampled(model)
                 ?: uri?.let {
                     runCatching {
-                        context.contentResolver.openInputStream(it)?.use(BitmapFactory::decodeStream)
+                        context.contentResolver.openInputStream(it)?.use(::decodeStreamSampled)
                     }.getOrNull()
                 }
         }
     }
     bitmap?.asImageBitmap()
+}
+
+private fun decodeFileSampled(path: String, maxDim: Int = CHAT_BACKGROUND_MAX_DIM): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(path, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val opts = BitmapFactory.Options().apply {
+        inSampleSize = computeSampleSize(bounds.outWidth, bounds.outHeight, maxDim)
+    }
+    return BitmapFactory.decodeFile(path, opts)
+}
+
+private fun decodeStreamSampled(input: java.io.InputStream, maxDim: Int = CHAT_BACKGROUND_MAX_DIM): Bitmap? {
+    val bytes = readAllBytes(input)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val opts = BitmapFactory.Options().apply {
+        inSampleSize = computeSampleSize(bounds.outWidth, bounds.outHeight, maxDim)
+    }
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+}
+
+private fun readAllBytes(input: java.io.InputStream): ByteArray {
+    val out = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    var n = input.read(buffer)
+    while (n != -1) {
+        out.write(buffer, 0, n)
+        n = input.read(buffer)
+    }
+    return out.toByteArray()
+}
+
+private fun computeSampleSize(width: Int, height: Int, maxDim: Int): Int {
+    var sample = 1
+    var w = width
+    var h = height
+    while (w / 2 >= maxDim || h / 2 >= maxDim) {
+        sample *= 2
+        w /= 2
+        h /= 2
+    }
+    return sample
 }
 
 /**
@@ -165,6 +211,7 @@ private suspend fun loadChatBackgroundViaCoil(context: Context, model: String): 
     val loader = SingletonImageLoader.get(context)
     val request = ImageRequest.Builder(context)
         .data(model)
+        .size(CHAT_BACKGROUND_MAX_DIM, CHAT_BACKGROUND_MAX_DIM)
         // 硬件位图无法被 asImageBitmap/RenderEffect 采样，关闭硬件加速以保证可读
         .allowHardware(false)
         .build()

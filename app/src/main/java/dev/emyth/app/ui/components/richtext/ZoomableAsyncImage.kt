@@ -45,7 +45,7 @@ fun ZoomableAsyncImage(
         .data(model)
         .placeholder(placeholder)
         .crossfade(false)
-        .allowHardware(!export)
+        .allowHardware(false)
         .build()
     var loading by remember { mutableStateOf(false) }
     AsyncImage(
