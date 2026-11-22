@@ -691,6 +691,9 @@ private fun ChatPageContent(
                     vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
                     vm.saveConversationAsync()
                 },
+                onQuote = { text ->
+                    inputState.setQuote(text)
+                },
             )
         }
     }

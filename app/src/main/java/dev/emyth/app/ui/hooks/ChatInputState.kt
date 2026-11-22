@@ -19,6 +19,7 @@ class ChatInputState {
     val textContent = TextFieldState()
     var messageContent by mutableStateOf(listOf<UIMessagePart>())
     var editingMessage by mutableStateOf<Uuid?>(null)
+    var quoteText by mutableStateOf<String?>(null)
     private var editingParts: List<UIMessagePart>? = null
     private var editingAttachmentUrls: Set<String> = emptySet()
 
@@ -28,6 +29,15 @@ class ChatInputState {
         editingMessage = null
         editingParts = null
         editingAttachmentUrls = emptySet()
+        quoteText = null
+    }
+
+    fun setQuote(text: String) {
+        quoteText = text
+    }
+
+    fun clearQuote() {
+        quoteText = null
     }
 
     fun isEditing() = editingMessage != null
@@ -54,7 +64,10 @@ class ChatInputState {
     }
 
     fun getContents(): List<UIMessagePart> {
-        val text = textContent.text.toString()
+        val rawText = textContent.text.toString()
+        val text = quoteText?.let { quote ->
+            if (quote.isBlank()) rawText else "> $quote\n\n$rawText"
+        } ?: rawText
         if (isEditing()) {
             val originalParts = editingParts
             if (originalParts != null) {

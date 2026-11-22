@@ -144,6 +144,7 @@ fun ChatList(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
+    onQuote: (String) -> Unit = {},
 ) {
     AnimatedContent(
         targetState = previewMode,
@@ -188,6 +189,7 @@ fun ChatList(
                 onToolAnswer = onToolAnswer,
                 onToggleFavorite = onToggleFavorite,
                 onConversationSystemPromptChange = onConversationSystemPromptChange,
+                onQuote = onQuote,
             )
         }
     }
@@ -220,6 +222,7 @@ private fun ChatListNormal(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
+    onQuote: (String) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -378,6 +381,7 @@ private fun ChatListNormal(
                             onClearToolRecords = { onClearToolRecords(node.currentMessage) },
                             onToolApproval = onToolApproval,
                             onToolAnswer = onToolAnswer,
+                            onQuote = onQuote,
                             lastMessage = index == displayNodes.lastIndex,
                         )
                     }

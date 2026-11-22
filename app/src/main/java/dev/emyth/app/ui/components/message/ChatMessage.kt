@@ -19,6 +19,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -259,6 +260,7 @@ fun ChatMessage(
     onClearToolRecords: (() -> Unit)? = null,
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
+    onQuote: (String) -> Unit = {},
 ) {
     val message = node.messages[node.selectIndex]
     val settings = LocalDisplaySettings.current
@@ -323,6 +325,7 @@ fun ChatMessage(
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
+                onQuote = onQuote,
             )
             message.translation?.let { translation ->
                 CollapsibleTranslationText(
@@ -420,6 +423,7 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
+    onQuote: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -530,6 +534,7 @@ private fun MessagePartsBlock(
                                                         cornerStyle = displaySettings.bubbleCornerStyle,
                                                         isUser = true,
                                                         onClick = { onUserMessageClick?.invoke() },
+                                                        onLongPress = { onQuote(segment) },
                                                     ) {
                                                         MarkdownBlock(
                                                             content = segment.replaceRegexes(
@@ -578,6 +583,7 @@ private fun MessagePartsBlock(
                                                         cornerRadius = displaySettings.bubbleCornerRadius.dp,
                                                         color = displaySettings.assistantBubbleColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.surfaceContainerHigh,
                                                         bubbleAlpha = bubbleAlpha,
+                                                        onLongPress = { onQuote(segment) },
                                                     cornerStyle = displaySettings.bubbleCornerStyle,
                                                     ) {
                                                         MarkdownBlock(
@@ -842,6 +848,7 @@ private fun BubbleSurface(
     color: Color,
     bubbleAlpha: Float,
     onClick: (() -> Unit)? = null,
+    onLongPress: (() -> Unit)? = null,
     // 本轮原型：用户与助手的普通文本气泡传 true（最终由 LiveBubbleBlurContext 与 final 条件决定）
     enableLiveBubbleBlur: Boolean = false,
     cornerStyle: BubbleCornerStyle = BubbleCornerStyle.SYMMETRIC,
@@ -849,6 +856,18 @@ private fun BubbleSurface(
     content: @Composable () -> Unit,
 ) {
     val materialMode = LocalMaterialMode.current
+    val bubbleClickModifier = when {
+        onClick != null && onLongPress != null -> Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongPress,
+        )
+        onClick != null -> Modifier.clickable(onClick = onClick)
+        onLongPress != null -> Modifier.combinedClickable(
+            onClick = {},
+            onLongClick = onLongPress,
+        )
+        else -> Modifier
+    }
     val liveContext = LocalLiveBubbleBlur.current
     val liveEnabled =
         enableLiveBubbleBlur &&
@@ -1068,7 +1087,7 @@ private fun BubbleSurface(
         Box(
             modifier = Modifier
                 .animateContentSize()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(bubbleClickModifier)
                 .liquidGlass(
                     enabled = true,
                     shape = shape,
@@ -1084,7 +1103,7 @@ private fun BubbleSurface(
             modifier = Modifier
                 .animateContentSize()
                 .clip(shape)
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(bubbleClickModifier)
                 .border(1.dp, glassBorderColor, shape)
         ) {
             if (finalLiveBubbleBlurEnabled) {
@@ -1129,10 +1148,11 @@ private fun BubbleSurface(
         }
     } else {
         Surface(
-            modifier = Modifier.animateContentSize(),
+            modifier = Modifier
+                .animateContentSize()
+                .then(bubbleClickModifier),
             shape = shape,
             color = color.copy(alpha = effectiveAlpha),
-            onClick = onClick ?: {},
         ) {
             Column(modifier = Modifier.padding(8.dp)) { content() }
         }
