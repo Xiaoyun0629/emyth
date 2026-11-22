@@ -1013,6 +1013,7 @@ class LocalTools(
                                 is TTSProviderSetting.XAI -> p.baseUrl
                                 is TTSProviderSetting.MiMo -> p.baseUrl
                                 is TTSProviderSetting.ElevenLabs -> p.baseUrl
+                                is TTSProviderSetting.DeepSeek -> p.baseUrl
                                 is TTSProviderSetting.SystemTTS -> "(系统TTS)"
                             }
                             "- ${p.name} → $url"
@@ -1037,7 +1038,8 @@ class LocalTools(
                             "xai" -> TTSProviderSetting.XAI(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.x.ai/v1" })
                             "mimo" -> TTSProviderSetting.MiMo(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.xiaomimimo.com/v1" })
                             "elevenlabs" -> TTSProviderSetting.ElevenLabs(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.elevenlabs.io/v1" })
-                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知 TTS 类型 $type，可选 openai/gemini/system/minimax/qwen/groq/xai/mimo/elevenlabs"}"""))
+                            "deepseek" -> TTSProviderSetting.DeepSeek(name = name, apiKey = apiKey, baseUrl = baseUrl.ifBlank { "https://api.deepseek.com/v1" })
+                            else -> return@Tool listOf(UIMessagePart.Text("""{"success":false,"error":"未知 TTS 类型 $type，可选 openai/gemini/system/minimax/qwen/groq/xai/mimo/elevenlabs/deepseek"}"""))
                         }
                         store.update { st -> st.copy(ttsProviders = st.ttsProviders.filterNot { it.name == name } + provider) }
                         listOf(UIMessagePart.Text("""{"success":true,"name":"$name","type":"$type"}"""))
@@ -1064,6 +1066,7 @@ class LocalTools(
                                 is TTSProviderSetting.XAI -> target.copy(apiKey = value)
                                 is TTSProviderSetting.MiMo -> target.copy(apiKey = value)
                                 is TTSProviderSetting.ElevenLabs -> target.copy(apiKey = value)
+                                is TTSProviderSetting.DeepSeek -> target.copy(apiKey = value)
                                 is TTSProviderSetting.SystemTTS -> target
                             }
                             "baseUrl" -> when (target) {
@@ -1075,6 +1078,7 @@ class LocalTools(
                                 is TTSProviderSetting.XAI -> target.copy(baseUrl = value)
                                 is TTSProviderSetting.MiMo -> target.copy(baseUrl = value)
                                 is TTSProviderSetting.ElevenLabs -> target.copy(baseUrl = value)
+                                is TTSProviderSetting.DeepSeek -> target.copy(baseUrl = value)
                                 is TTSProviderSetting.SystemTTS -> target
                             }
                             "name" -> target.copyProvider(name = value)

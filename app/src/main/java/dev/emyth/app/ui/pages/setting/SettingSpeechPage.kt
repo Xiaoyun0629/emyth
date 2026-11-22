@@ -697,6 +697,7 @@ private fun TTSProviderItem(
                             is TTSProviderSetting.XAI -> "xAI"
                             is TTSProviderSetting.MiMo -> "MiMo"
                             is TTSProviderSetting.ElevenLabs -> "ElevenLabs"
+                            is TTSProviderSetting.DeepSeek -> "DeepSeek"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

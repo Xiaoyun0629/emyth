@@ -1,0 +1,75 @@
+/*
+ * Emyth
+ * 衍生自 RikkaHub (https://github.com/rikkahub/rikkahub)，原作者 RE
+ * 本项目基于 GNU AGPL v3 开源，详见根目录 LICENSE 文件
+ */
+
+package me.rerere.tts.provider.providers
+
+import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import me.rerere.tts.model.AudioChunk
+import me.rerere.tts.model.AudioFormat
+import me.rerere.tts.model.TTSRequest
+import me.rerere.tts.provider.TTSProvider
+import me.rerere.tts.provider.TTSProviderSetting
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
+
+private const val TAG = "DeepSeekTTSProvider"
+
+class DeepSeekTTSProvider : TTSProvider<TTSProviderSetting.DeepSeek> {
+    private val httpClient = OkHttpClient.Builder()
+        .readTimeout(120, TimeUnit.SECONDS)
+        .build()
+
+    override fun generateSpeech(
+        context: Context,
+        providerSetting: TTSProviderSetting.DeepSeek,
+        request: TTSRequest
+    ): Flow<AudioChunk> = flow {
+        val requestBody = JSONObject().apply {
+            put("text", request.text)
+            put("voice_id", providerSetting.voiceId)
+            put("format", "wav")
+            put("filter_markdown", true)
+        }
+
+        Log.i(TAG, "generateSpeech: $requestBody")
+
+        val httpRequest = Request.Builder()
+            .url("${providerSetting.baseUrl}/tools/tts")
+            .addHeader("Authorization", "Bearer ${providerSetting.apiKey}")
+            .addHeader("Content-Type", "application/json")
+            .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        val response = httpClient.newCall(httpRequest).execute()
+
+        if (!response.isSuccessful) {
+            val errorBody = response.body.string()
+            Log.e(TAG, "DeepSeek TTS request failed: ${response.code} ${response.message}, body: $errorBody")
+            throw Exception("DeepSeek TTS request failed: ${response.code} ${response.message}")
+        }
+
+        val audioData = response.body.bytes()
+
+        emit(
+            AudioChunk(
+                data = audioData,
+                format = AudioFormat.WAV,
+                isLast = true,
+                metadata = mapOf(
+                    "provider" to "deepseek",
+                    "voice" to providerSetting.voiceId
+                )
+            )
+        )
+    }
+}
