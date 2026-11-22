@@ -81,6 +81,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
 import dev.emyth.app.ui.components.table.DataTable
 import dev.emyth.app.ui.context.LocalSettings
+import dev.emyth.app.ui.components.ui.toComposeColor
 import dev.emyth.app.ui.theme.JetbrainsMono
 import dev.emyth.app.utils.toDp
 import org.intellij.markdown.IElementType
@@ -395,8 +396,9 @@ private fun MarkdownNode(
         // 引用块
         MarkdownElementTypes.BLOCK_QUOTE -> {
             ProvideTextStyle(LocalTextStyle.current.copy(fontStyle = FontStyle.Italic)) {
-                val borderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                val bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                val quoteColor = LocalSettings.current.displaySetting.quoteColor?.let { it.toComposeColor() }
+                val borderColor = quoteColor ?: MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                val bgColor = quoteColor?.copy(alpha = 0.2f) ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
                 Column(
                     modifier = Modifier
                         .drawWithContent {

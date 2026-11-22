@@ -770,6 +770,7 @@ data class DisplaySetting(
     val globalTextColor: Long? = null,
     val userBubbleColor: Long? = null,
     val assistantBubbleColor: Long? = null,
+    val quoteColor: Long? = null,
     val thinkingFontSizeRatio: Float = 1.0f,
     val thinkingBubbleColor: Long? = null,
     val chatBackgroundColor: Long? = null,

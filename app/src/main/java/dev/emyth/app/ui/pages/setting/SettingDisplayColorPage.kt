@@ -59,6 +59,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
     var showGlobalTextColorPicker by remember { mutableStateOf(false) }
     var showUserBubbleColorPicker by remember { mutableStateOf(false) }
     var showAssistantBubbleColorPicker by remember { mutableStateOf(false) }
+    var showQuoteColorPicker by remember { mutableStateOf(false) }
     var showThinkingBubbleColorPicker by remember { mutableStateOf(false) }
     var showChatBackgroundColorPicker by remember { mutableStateOf(false) }
     var showPrimaryColorPicker by remember { mutableStateOf(false) }
@@ -94,6 +95,14 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             defaultColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             onConfirm = { updateDisplaySetting(displaySetting.copy(assistantBubbleColor = it)) },
             onDismiss = { showAssistantBubbleColorPicker = false }
+        )
+    }
+    if (showQuoteColorPicker) {
+        ColorPickerDialog(
+            initialColor = displaySetting.quoteColor,
+            defaultColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            onConfirm = { updateDisplaySetting(displaySetting.copy(quoteColor = it)) },
+            onDismiss = { showQuoteColorPicker = false }
         )
     }
     if (showThinkingBubbleColorPicker) {
@@ -225,6 +234,26 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                                 TextButton(onClick = { showAssistantBubbleColorPicker = true }) { Text("自定义") }
                                 if (displaySetting.assistantBubbleColor != null) {
                                     TextButton(onClick = { updateDisplaySetting(displaySetting.copy(assistantBubbleColor = null)) }) { Text("重置") }
+                                }
+                            }
+                        },
+                    )
+                    item(
+                        headlineContent = { Text("引用颜色") },
+                        supportingContent = { Text("自定义引用块与引用条的颜色") },
+                        trailingContent = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .background(
+                                            displaySetting.quoteColor?.let { it.toComposeColor() } ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                                            CircleShape
+                                        )
+                                )
+                                TextButton(onClick = { showQuoteColorPicker = true }) { Text("自定义") }
+                                if (displaySetting.quoteColor != null) {
+                                    TextButton(onClick = { updateDisplaySetting(displaySetting.copy(quoteColor = null)) }) { Text("重置") }
                                 }
                             }
                         },
