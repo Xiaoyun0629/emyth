@@ -243,6 +243,35 @@ fun createMusicTool(context: Context): Tool = Tool(
 
                     val activities = context.packageManager.queryIntentActivities(searchIntent, 0)
                     if (activities.isNullOrEmpty()) {
+                        // 主流国产音乐 App（网易云/QQ音乐/酷狗等）大多不响应系统的
+                        // MEDIA_PLAY_FROM_SEARCH 广播，这里降级为直接打开已安装的音乐 App。
+                        val fallbackPackages = listOf(
+                            "com.netease.cloudmusic",    // 网易云音乐
+                            "com.tencent.qqmusic",       // QQ音乐
+                            "com.tencent.qqmusiclite",   // QQ音乐极速版
+                            "com.kugou.android",         // 酷狗音乐
+                            "com.kuwo.kwmusichd",        // 酷我音乐
+                            "com.miui.player",           // 小米音乐
+                        )
+                        val installed = fallbackPackages.firstOrNull { pkg ->
+                            runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+                        }
+                        if (installed != null) {
+                            val launchIntent = context.packageManager.getLaunchIntentForPackage(installed)
+                            if (launchIntent != null) {
+                                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(launchIntent)
+                                return@Tool listOf(UIMessagePart.Text(
+                                    buildJsonObject {
+                                        put("success", true)
+                                        put("action", JsonPrimitive("play_search"))
+                                        put("query", JsonPrimitive(query))
+                                        put("app_name", JsonPrimitive(getAppName(context, installed)))
+                                        put("message", JsonPrimitive("未找到支持系统搜索播放的音乐应用，已帮你打开${getAppName(context, installed)}，请手动搜索「${query}」"))
+                                    }.toString()
+                                ))
+                            }
+                        }
                         return@Tool listOf(UIMessagePart.Text(
                             buildJsonObject {
                                 put("success", false)
